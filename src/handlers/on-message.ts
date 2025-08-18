@@ -1,4 +1,5 @@
 import { Composer } from "grammy";
+
 import { redis } from "../config/redis";
 import { redisGameSchema } from "../core/game";
 
@@ -16,7 +17,7 @@ composer.on("message:text", async (ctx) => {
   if (!gameState || !gameState.success) return;
 
   const correctGuess = gameState.data.words.some(
-    (word) => word.toLowerCase() === userGuess
+    (word) => word.toLowerCase() === userGuess,
   );
 
   if (correctGuess) {
@@ -27,7 +28,7 @@ composer.on("message:text", async (ctx) => {
 All possible forms: ${gameState.data.words.join(", ")}
 
 Start a new game with /newhush`,
-      { parse_mode: "HTML", reply_parameters: { message_id: ctx.msgId } }
+      { parse_mode: "HTML", reply_parameters: { message_id: ctx.msgId } },
     );
     return await redis.del(`game:${chatId}`);
   } else if (isCloseToWord(userGuess, gameState.data.words)) {
@@ -62,27 +63,22 @@ function levenshteinDistance(str1: string, str2: string): number {
     .fill(null)
     .map(() => Array(str1.length + 1).fill(null));
 
-  // @ts-ignore
-  for (let i = 0; i <= str1.length; i++) matrix[0][i] = i;
-  // @ts-ignore
-
-  for (let j = 0; j <= str2.length; j++) matrix[j][0] = j;
-
   for (let j = 1; j <= str2.length; j++) {
     for (let i = 1; i <= str1.length; i++) {
       const indicator = str1[i - 1] === str2[j - 1] ? 0 : 1;
-      // @ts-ignore
+
+      // @ts-expect-error - shut up
       matrix[j][i] = Math.min(
-        // @ts-ignore
+        // @ts-expect-error - shut up
         matrix[j][i - 1] + 1,
-        // @ts-ignore
+        // @ts-expect-error - shut up
         matrix[j - 1][i] + 1,
-        // @ts-ignore
-        matrix[j - 1][i - 1] + indicator
+        // @ts-expect-error - shut up
+        matrix[j - 1][i - 1] + indicator,
       );
     }
   }
 
-  // @ts-ignore
+  // @ts-expect-error - shut up
   return matrix[str2.length][str1.length];
 }

@@ -63,12 +63,12 @@ export class WordSelector {
       const setSize = results[1]![1] as number;
 
       const availableWords = allWords.filter(
-        (word) => !usedWords.includes(word.toLowerCase())
+        (word) => !usedWords.includes(word.toLowerCase()),
       );
 
       if (availableWords.length < this.config.resetThreshold) {
         const recentWords = usedWords.slice(
-          -Math.floor(this.config.resetThreshold / 2)
+          -Math.floor(this.config.resetThreshold / 2),
         );
         await redis.del(historyKey);
         if (recentWords.length > 0) {

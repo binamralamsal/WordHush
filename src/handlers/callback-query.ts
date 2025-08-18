@@ -1,7 +1,8 @@
 import { Composer } from "grammy";
+
+import { redis } from "../config/redis";
 import { createGameKeyboard, redisGameSchema, startGame } from "../core/game";
 import { resolveDifficulty } from "../util/resolve-difficulty";
-import { redis } from "../config/redis";
 
 const composer = new Composer();
 
@@ -51,28 +52,28 @@ composer.on("callback_query:data", async (ctx) => {
       JSON.stringify({
         ...existingGame.data,
         currentHintIndex: nextHintIndex,
-      })
+      }),
     );
 
     await ctx.reply(
       `<b>Hint ${nextHintIndex + 1}:</b> ${
         existingGame.data.hints[nextHintIndex]
       }`,
-      { parse_mode: "HTML", reply_markup: createGameKeyboard() }
+      { parse_mode: "HTML", reply_markup: createGameKeyboard() },
     );
 
     return await ctx.answerCallbackQuery(`Hint ${nextHintIndex + 1} revealed!`);
   } else if (callbackData === "show_all_hints") {
     const revealedHints = existingGame.data.hints.slice(
       0,
-      existingGame.data.currentHintIndex + 1
+      existingGame.data.currentHintIndex + 1,
     );
 
     await ctx.reply(
       `<blockquote>All Hints Revealed:</blockquote>\n\n${revealedHints
         .map((hint, index) => `${index + 1}: ${hint}`)
         .join("\n")}`,
-      { parse_mode: "HTML", reply_markup: createGameKeyboard() }
+      { parse_mode: "HTML", reply_markup: createGameKeyboard() },
     );
 
     return await ctx.answerCallbackQuery("All revealed hints shown!");

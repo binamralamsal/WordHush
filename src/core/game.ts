@@ -1,8 +1,10 @@
-import { InlineKeyboard, type CommandContext, type Context } from "grammy";
+import { type Context, InlineKeyboard } from "grammy";
+
+import z from "zod";
+
+import { redis } from "../config/redis";
 import type { DifficultyLevels } from "../types";
 import { getWordWithHints } from "./hints";
-import { redis } from "../config/redis";
-import z from "zod";
 
 export function createGameKeyboard() {
   return new InlineKeyboard()
@@ -19,14 +21,14 @@ export const redisGameSchema = z.object({
 export async function startGame(
   ctx: Context,
   chatId: number,
-  level: DifficultyLevels
+  level: DifficultyLevels,
 ) {
   const data = await redis.get(`game:${chatId}`);
   if (data) {
     const existingGame = redisGameSchema.safeParse(JSON.parse(data));
     if (existingGame.success) {
       return await ctx.reply(
-        "A game is already in progress. Please finish it before starting a new one."
+        "A game is already in progress. Please finish it before starting a new one.",
       );
     } else {
       console.error("Invalid game data in Redis:", existingGame.error);
@@ -42,7 +44,7 @@ export async function startGame(
       return await ctx.api.editMessageText(
         chatId,
         generatingMessage.message_id,
-        "Failed to generate word hints. Please try again."
+        "Failed to generate word hints. Please try again.",
       );
     }
 
@@ -54,7 +56,7 @@ export async function startGame(
         words: data.words,
         hints: data.hints,
         currentHintIndex: 0,
-      })
+      }),
     );
 
     await ctx.api.editMessageText(
@@ -68,7 +70,7 @@ export async function startGame(
       {
         parse_mode: "HTML",
         reply_markup: createGameKeyboard(),
-      }
+      },
     );
   } catch (error) {
     console.error("Error starting game:", error);

@@ -1,7 +1,8 @@
 import { Composer } from "grammy";
-import { CommandsHelper } from "../util/commands-helper";
-import { redisGameSchema, startGame } from "../core/game";
+
 import { redis } from "../config/redis";
+import { redisGameSchema } from "../core/game";
+import { CommandsHelper } from "../util/commands-helper";
 
 const composer = new Composer();
 
@@ -24,7 +25,7 @@ The word was: <b>${existingGame.data.words[0]}</b>
 All possible forms: ${existingGame.data.words.join(", ")}
 
 Start a new game with /newhush`,
-    { parse_mode: "HTML" }
+    { parse_mode: "HTML" },
   );
 
   await redis.del(`game:${chatId}`);

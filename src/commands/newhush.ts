@@ -1,8 +1,9 @@
 import { Composer, InlineKeyboard } from "grammy";
-import { CommandsHelper } from "../util/commands-helper";
-import { redisGameSchema, startGame } from "../core/game";
-import { resolveDifficulty } from "../util/resolve-difficulty";
+
 import { redis } from "../config/redis";
+import { redisGameSchema, startGame } from "../core/game";
+import { CommandsHelper } from "../util/commands-helper";
+import { resolveDifficulty } from "../util/resolve-difficulty";
 
 const composer = new Composer();
 
@@ -30,7 +31,7 @@ composer.command("newhush", async (ctx) => {
     const existingGame = redisGameSchema.safeParse(JSON.parse(data));
     if (existingGame.success) {
       return await ctx.reply(
-        "A game is already in progress. Please finish it before starting a new one."
+        "A game is already in progress. Please finish it before starting a new one.",
       );
     } else {
       console.error("Invalid game data in Redis:", existingGame.error);
@@ -48,7 +49,7 @@ composer.command("newhush", async (ctx) => {
   const selectedLevel = resolveDifficulty(difficultyArg);
   if (!selectedLevel) {
     await ctx.reply(
-      `❌ Invalid difficulty. Use: easy, medium, hard, extreme, or random`
+      `❌ Invalid difficulty. Use: easy, medium, hard, extreme, or random`,
     );
     return;
   }

@@ -1,7 +1,8 @@
 import { Composer } from "grammy";
+
+import { endhushCommand } from "./endhush";
 import { helpCommand } from "./help";
 import { newhushCommand } from "./newhush";
-import { endhushCommand } from "./endhush";
 
 const composer = new Composer();
 

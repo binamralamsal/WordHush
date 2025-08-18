@@ -1,4 +1,5 @@
 import { Composer } from "grammy";
+
 import { CommandsHelper } from "../util/commands-helper";
 
 const composer = new Composer();
@@ -29,13 +30,13 @@ Welcome to WordHush - the ultimate word guessing game where our AI gives you cle
 <code>/help</code> - Show commands and rules
 
 Ready to test your word skills? Type <code>/newhush</code> to begin! 🧠✨`,
-    { parse_mode: "HTML" }
-  )
+    { parse_mode: "HTML" },
+  ),
 );
 
 CommandsHelper.addNewCommand(
   "help",
-  "Get help on how to play and commands list."
+  "Get help on how to play and commands list.",
 );
 
 export const helpCommand = composer;
