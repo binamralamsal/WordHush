@@ -29,7 +29,7 @@ export function formatUserScoreMessage(
 <blockquote><strong>🏆 ${userMention}'s Performance ${scopeText.charAt(0).toUpperCase() + scopeText.slice(1)} 🏆</strong></blockquote>
 
 📊 <strong>Total Score:</strong> ${formattedScore}
-💎 <strong>Coins:</strong> ${formattedCoins}
+🏵 <strong>Coins:</strong> ${formattedCoins}
 🏅 <strong>Rank:</strong> #${formattedRank}
   `.trim();
 

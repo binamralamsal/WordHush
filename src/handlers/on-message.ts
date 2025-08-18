@@ -63,7 +63,7 @@ composer.on("message:text", async (ctx) => {
       .execute();
 
     ctx.reply(
-      `<blockquote><b>🎉 Congratulations! You guessed it right + ${score} 💎</b></blockquote>
+      `<blockquote><b>🎉 Congratulations! You guessed it right + ${score} 🏵</b></blockquote>
 
 ✅ The word was: <b>${userGuess}</b>
 All possible forms: ${gameState.data.words.join(", ")}

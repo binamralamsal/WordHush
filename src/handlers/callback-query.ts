@@ -249,7 +249,7 @@ composer.on("callback_query:data", async (ctx) => {
       const hint = createLetterHint(correctWord, updatedRevealed);
 
       await ctx.editMessageText(
-        `<blockquote><a href="tg://user?id=${ctx.from.id}">${ctx.from.first_name + (ctx.from.last_name ? " " + ctx.from.last_name : "")}</a> revealed a letter. -2 💎</blockquote>\n\n<b>Revealed Letter:</b> ${hint}`,
+        `<blockquote><a href="tg://user?id=${ctx.from.id}">${ctx.from.first_name + (ctx.from.last_name ? " " + ctx.from.last_name : "")}</a> revealed a letter. -2 🏵</blockquote>\n\n<b>Revealed Letter:</b> ${hint}`,
         {
           parse_mode: "HTML",
         },
