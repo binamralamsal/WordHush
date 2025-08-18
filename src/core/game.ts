@@ -2,6 +2,7 @@ import { type Context, InlineKeyboard } from "grammy";
 
 import z from "zod";
 
+import { difficultyLevels } from "../config/constants";
 import { redis } from "../config/redis";
 import type { DifficultyLevels } from "../types";
 import { getWordWithHints } from "./hints";
@@ -15,6 +16,7 @@ export function createGameKeyboard() {
 export const redisGameSchema = z.object({
   words: z.array(z.string()),
   hints: z.array(z.string()),
+  level: z.enum(difficultyLevels),
   currentHintIndex: z.number().default(0),
 });
 
@@ -56,6 +58,7 @@ export async function startGame(
         words: data.words,
         hints: data.hints,
         currentHintIndex: 0,
+        level,
       }),
     );
 

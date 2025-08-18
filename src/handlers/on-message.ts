@@ -1,5 +1,8 @@
 import { Composer } from "grammy";
 
+import { sql } from "kysely";
+
+import { db } from "../config/db";
 import { redis } from "../config/redis";
 import { redisGameSchema } from "../core/game";
 
@@ -8,6 +11,11 @@ const composer = new Composer();
 composer.on("message:text", async (ctx) => {
   const chatId = ctx.chat.id;
   const userGuess = ctx.message.text.trim().toLowerCase();
+  const name = `${ctx.from.first_name}${
+    ctx.from.last_name ? " " + ctx.from.last_name : ""
+  }`;
+  const username = ctx.from.username;
+  const userId = ctx.from.id.toString();
 
   if (userGuess.startsWith("/")) return;
 
@@ -15,17 +23,51 @@ composer.on("message:text", async (ctx) => {
   const gameState = data ? redisGameSchema.safeParse(JSON.parse(data)) : null;
 
   if (!gameState || !gameState.success) return;
+  const level = gameState.data.level;
 
   const correctGuess = gameState.data.words.some(
     (word) => word.toLowerCase() === userGuess,
   );
 
   if (correctGuess) {
+    const score =
+      level === "easy"
+        ? 5
+        : level === "medium"
+          ? 10
+          : level === "hard"
+            ? 20
+            : 30;
+
+    const user = await db
+      .insertInto("users")
+      .values({ name, username, id: userId, coins: score })
+      .onConflict((oc) =>
+        oc.column("id").doUpdateSet({
+          name: name,
+          username: username || null,
+          coins: sql`users.coins + EXCLUDED.coins`,
+        }),
+      )
+      .returningAll()
+      .executeTakeFirstOrThrow();
+
+    await db
+      .insertInto("leaderboard")
+      .values({
+        score,
+        chatId: chatId.toString(),
+        level,
+        userId: user.id,
+      })
+      .execute();
+
     ctx.reply(
-      `<blockquote><b>🎉 Congratulations! You guessed it right</b></blockquote>
+      `<blockquote><b>🎉 Congratulations! You guessed it right + ${score} 💎</b></blockquote>
 
 ✅ The word was: <b>${userGuess}</b>
 All possible forms: ${gameState.data.words.join(", ")}
+Added ${score} points to the leaderboard.
 
 Start a new game with /newhush`,
       { parse_mode: "HTML", reply_parameters: { message_id: ctx.msgId } },
