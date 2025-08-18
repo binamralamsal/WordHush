@@ -1,5 +1,6 @@
 import { Composer, InlineKeyboard } from "grammy";
 
+import { env } from "../config/env";
 import { redis } from "../config/redis";
 import { redisGameSchema, startGame } from "../core/game";
 import { CommandsHelper } from "../util/commands-helper";
@@ -20,6 +21,11 @@ function createDifficultyKeyboard() {
 
 composer.command("newhush", async (ctx) => {
   const chatId = ctx.chat.id;
+
+  if (!env.ALLOWED_CHATS.includes(chatId.toString()))
+    return ctx.reply(
+      "This game is only available in specific chats at the moment..",
+    );
 
   if (!ctx.message) return;
   const args = ctx.message?.text.split(" ");

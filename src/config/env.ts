@@ -13,5 +13,9 @@ export const env = z
       .default("")
       .transform((val) => val.split(",").filter(Boolean).map(Number)),
     REDIS_URI: z.string().default("redis://127.0.0.1:6379"),
+    ALLOWED_CHATS: z
+      .string()
+      .default("")
+      .transform((val) => val.split(" ").filter(Boolean)),
   })
   .parse(process.env);
