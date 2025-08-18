@@ -9,15 +9,18 @@ import { getWordWithHints } from "./hints";
 
 export function createGameKeyboard() {
   return new InlineKeyboard()
-    .text("Reveal new hint", "reveal_hint")
-    .text("Show all hints", "show_all_hints");
+    .text("💡 Reveal new hint", "reveal_hint")
+    .text("📒 Show all hints", "show_all_hints")
+    .row()
+    .text("🔠 Reveal a letter (-2 💎)", "reveal_letter");
 }
 
 export const redisGameSchema = z.object({
-  words: z.array(z.string()),
+  words: z.array(z.string()).nonempty(),
   hints: z.array(z.string()),
   level: z.enum(difficultyLevels),
   currentHintIndex: z.number().default(0),
+  revealedPositions: z.array(z.number()).default([]),
 });
 
 export async function startGame(
@@ -49,8 +52,6 @@ export async function startGame(
         "Failed to generate word hints. Please try again.",
       );
     }
-
-    console.log(data.words);
 
     await redis.set(
       `game:${chatId}`,
