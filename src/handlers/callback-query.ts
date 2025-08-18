@@ -207,6 +207,19 @@ composer.on("callback_query:data", async (ctx) => {
         });
       }
 
+      const user = await db
+        .selectFrom("users")
+        .selectAll()
+        .where("id", "=", userId)
+        .executeTakeFirst();
+
+      if (!user || user.coins < 2) {
+        return await ctx.answerCallbackQuery({
+          text: "You don't have enough coins to reveal a letter.",
+          show_alert: true,
+        });
+      }
+
       const correctWord = existingGame.data.words[0];
       if (!correctWord) break condition;
 
