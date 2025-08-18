@@ -1,0 +1,26 @@
+{
+  "name": "wordhush",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "start": "bun run src/index.ts",
+    "dev": "bun run --watch src/index.ts"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "@grammyjs/auto-retry": "^2.0.2",
+    "@grammyjs/parse-mode": "^2.2.0",
+    "@grammyjs/runner": "^2.0.3",
+    "csv-parser": "^3.2.0",
+    "grammy": "^1.38.1",
+    "ioredis": "^5.7.0",
+    "zod": "^4.0.17"
+  }
+}
