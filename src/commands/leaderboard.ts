@@ -1,6 +1,6 @@
 import { Composer } from "grammy";
 
-import { getLeaderboardScores } from "../services/get-leaderboard-score";
+import { getLeaderboardScores } from "../services/get-leaderboard-scores";
 import { CommandsHelper } from "../util/commands-helper";
 import { formatLeaderboardMessage } from "../util/format-leaderboard-message";
 import { generateLeaderboardKeyboard } from "../util/generate-leaderboard-keyboard";

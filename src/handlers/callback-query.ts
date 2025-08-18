@@ -6,9 +6,11 @@ import {
 } from "../config/constants";
 import { redis } from "../config/redis";
 import { createGameKeyboard, redisGameSchema, startGame } from "../core/game";
-import { getLeaderboardScores } from "../services/get-leaderboard-score";
+import { getLeaderboardScores } from "../services/get-leaderboard-scores";
+import { getUserScores } from "../services/get-user-scores";
 import type { AllowedChatSearchKey, AllowedChatTimeKey } from "../types";
 import { formatLeaderboardMessage } from "../util/format-leaderboard-message";
+import { formatUserScoreMessage } from "../util/format-user-score-message";
 import { generateLeaderboardKeyboard } from "../util/generate-leaderboard-keyboard";
 import { resolveDifficulty } from "../util/resolve-difficulty";
 
@@ -66,6 +68,48 @@ composer.on("callback_query:data", async (ctx) => {
         },
       )
       .catch(console.error);
+  } else if (callbackData.startsWith("myscore")) {
+    const [, userId, searchKey, timeKey] = ctx.callbackQuery.data.split(" ");
+    if (!allowedChatSearchKeys.includes(searchKey as AllowedChatSearchKey))
+      return await ctx.answerCallbackQuery({ text: "Invalid action." });
+    if (!allowedChatTimeKeys.includes(timeKey as AllowedChatTimeKey))
+      return await ctx.answerCallbackQuery({ text: "Invalid action." });
+    if (!ctx.chat)
+      return await ctx.answerCallbackQuery({ text: "Invalid action." });
+    if (!userId)
+      return await ctx.answerCallbackQuery({ text: "Invalid action." });
+
+    const userScore = await getUserScores({
+      chatId: chatId.toString(),
+      userId,
+      searchKey: searchKey as AllowedChatSearchKey,
+      timeKey: timeKey as AllowedChatTimeKey,
+    });
+
+    if (!userScore)
+      return ctx.answerCallbackQuery({
+        text: "No one has scored yet.",
+        show_alert: true,
+      });
+
+    const keyboard = generateLeaderboardKeyboard(
+      searchKey as AllowedChatSearchKey,
+      timeKey as AllowedChatTimeKey,
+      `myscore ${Number(userId)}`,
+    );
+
+    await ctx
+      .editMessageText(
+        formatUserScoreMessage(userScore, searchKey as AllowedChatSearchKey),
+        {
+          reply_markup: keyboard,
+          parse_mode: "HTML",
+          link_preview_options: { is_disabled: true },
+        },
+      )
+      .catch(() => {});
+
+    return await ctx.answerCallbackQuery();
   }
 
   const data = await redis.get(`game:${chatId}`);
