@@ -73,7 +73,7 @@ Start a new game with /newhush`,
       { parse_mode: "HTML", reply_parameters: { message_id: ctx.msgId } },
     );
     return await redis.del(`game:${chatId}`);
-  } else if (isCloseToWord(userGuess, gameState.data.words)) {
+  } else if (isGuessSimilar(userGuess, gameState.data.words)) {
     ctx.reply("🔥 You're close! Try again or get more hints.", {
       reply_parameters: { message_id: ctx.msgId },
     });
@@ -82,45 +82,47 @@ Start a new game with /newhush`,
 
 export const onMessageHander = composer;
 
-function isCloseToWord(guess: string, targetWords: string[]): boolean {
-  const normalizedGuess = guess.toLowerCase().trim();
+function levenshteinDistance(a: string, b: string): number {
+  const dp: number[][] = Array.from({ length: a.length + 1 }, () =>
+    Array(b.length + 1).fill(0),
+  );
 
-  for (const word of targetWords) {
-    const normalizedWord = word.toLowerCase();
+  // @ts-expect-error - shut up
+  for (let i = 0; i <= a.length; i++) dp[i][0] = i;
+  // @ts-expect-error - shut up
+  for (let j = 0; j <= b.length; j++) dp[0][j] = j;
 
-    // Check if it's a partial match or similar
-    if (
-      normalizedWord.includes(normalizedGuess) ||
-      normalizedGuess.includes(normalizedWord) ||
-      levenshteinDistance(normalizedGuess, normalizedWord) <= 2
-    ) {
-      return true;
-    }
-  }
-  return false;
-}
-
-function levenshteinDistance(str1: string, str2: string): number {
-  const matrix = Array(str2.length + 1)
-    .fill(null)
-    .map(() => Array(str1.length + 1).fill(null));
-
-  for (let j = 1; j <= str2.length; j++) {
-    for (let i = 1; i <= str1.length; i++) {
-      const indicator = str1[i - 1] === str2[j - 1] ? 0 : 1;
-
-      // @ts-expect-error - shut up
-      matrix[j][i] = Math.min(
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) {
+      if (a[i - 1] === b[j - 1]) {
         // @ts-expect-error - shut up
-        matrix[j][i - 1] + 1,
+        dp[i][j] = dp[i - 1][j - 1];
+      } else {
         // @ts-expect-error - shut up
-        matrix[j - 1][i] + 1,
-        // @ts-expect-error - shut up
-        matrix[j - 1][i - 1] + indicator,
-      );
+        dp[i][j] = 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
+      }
     }
   }
 
   // @ts-expect-error - shut up
-  return matrix[str2.length][str1.length];
+  return dp[a.length][b.length];
+}
+
+function similarity(a: string, b: string): number {
+  const distance = levenshteinDistance(a.toLowerCase(), b.toLowerCase());
+  const maxLen = Math.max(a.length, b.length);
+  return 1 - distance / maxLen; // normalized similarity (0–1)
+}
+
+function isGuessSimilar(
+  guess: string,
+  targetWords: string[],
+  threshold: number = 0.7,
+): boolean {
+  for (const target of targetWords) {
+    if (similarity(guess, target) >= threshold) {
+      return true;
+    }
+  }
+  return false;
 }
