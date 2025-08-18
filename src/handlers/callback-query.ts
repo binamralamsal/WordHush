@@ -1,7 +1,15 @@
 import { Composer } from "grammy";
 
+import {
+  allowedChatSearchKeys,
+  allowedChatTimeKeys,
+} from "../config/constants";
 import { redis } from "../config/redis";
 import { createGameKeyboard, redisGameSchema, startGame } from "../core/game";
+import { getLeaderboardScores } from "../services/get-leaderboard-score";
+import type { AllowedChatSearchKey, AllowedChatTimeKey } from "../types";
+import { formatLeaderboardMessage } from "../util/format-leaderboard-message";
+import { generateLeaderboardKeyboard } from "../util/generate-leaderboard-keyboard";
 import { resolveDifficulty } from "../util/resolve-difficulty";
 
 const composer = new Composer();
@@ -25,6 +33,39 @@ composer.on("callback_query:data", async (ctx) => {
 
     await ctx.answerCallbackQuery(`Starting ${selectedLevel} game...`);
     return await startGame(ctx, chatId, selectedLevel);
+  } else if (callbackData.startsWith("leaderboard")) {
+    const [, searchKey, timeKey] = ctx.callbackQuery.data.split(" ");
+    if (!allowedChatSearchKeys.includes(searchKey as AllowedChatSearchKey))
+      return await ctx.answerCallbackQuery({ text: "Invalid action." });
+    if (!allowedChatTimeKeys.includes(timeKey as AllowedChatTimeKey))
+      return await ctx.answerCallbackQuery({ text: "Invalid action." });
+    if (!ctx.chat)
+      return await ctx.answerCallbackQuery({ text: "Invalid action." });
+
+    const memberScores = await getLeaderboardScores({
+      chatId: chatId.toString(),
+      searchKey: searchKey as AllowedChatSearchKey,
+      timeKey: timeKey as AllowedChatTimeKey,
+    });
+
+    const keyboard = generateLeaderboardKeyboard(
+      searchKey as AllowedChatSearchKey,
+      timeKey as AllowedChatTimeKey,
+    );
+
+    return await ctx
+      .editMessageText(
+        formatLeaderboardMessage(
+          memberScores,
+          searchKey as AllowedChatSearchKey,
+        ),
+        {
+          reply_markup: keyboard,
+          link_preview_options: { is_disabled: true },
+          parse_mode: "HTML",
+        },
+      )
+      .catch(console.error);
   }
 
   const data = await redis.get(`game:${chatId}`);

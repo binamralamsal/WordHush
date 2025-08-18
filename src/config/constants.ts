@@ -30,3 +30,12 @@ Your output must be in **strict JSON format** as follows:
 5. Do not add explanations, instructions, or anything outside the JSON.
 6. Make hints creative, indirect, and engaging for guessing the word.
 `;
+
+export const allowedChatSearchKeys = ["global", "group"] as const;
+export const allowedChatTimeKeys = [
+  "today",
+  "week",
+  "month",
+  "year",
+  "all",
+] as const;
