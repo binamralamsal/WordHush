@@ -281,8 +281,12 @@ composer.on("callback_query:data", async (ctx) => {
           parse_mode: "HTML",
         },
       );
+    } else if (callbackData === "cancel_reveal") {
+      await ctx.deleteMessage();
     }
   }
 
   return await ctx.answerCallbackQuery({ text: "Invalid action." });
 });
+
+export const callbackQueryHandler = composer;
