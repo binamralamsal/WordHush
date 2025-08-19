@@ -56,7 +56,7 @@ export async function startGame(
       JSON.stringify({
         words: data.words,
         hints: data.hints,
-        currentHintIndex: 0,
+        currentHintIndex: 1,
         level,
       }),
     );
