@@ -283,11 +283,20 @@ composer.on("callback_query:data", async (ctx) => {
         },
       );
     } else if (callbackData === "cancel_reveal") {
+      const [, userId] = callbackData.split(" ");
+
+      if (ctx.from.id.toString() !== userId) {
+        return await ctx.answerCallbackQuery({
+          text: "This is not for you!",
+          show_alert: true,
+        });
+      }
+      
       await ctx.deleteMessage();
     }
   }
 
-  return await ctx.answerCallbackQuery({ text: "Invalid action." });
+  return await ctx.answerCallbackQuery();
 });
 
 export const callbackQueryHandler = composer;
