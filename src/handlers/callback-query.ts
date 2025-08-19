@@ -282,7 +282,7 @@ composer.on("callback_query:data", async (ctx) => {
           parse_mode: "HTML",
         },
       );
-    } else if (callbackData.startsWith("confirm_reveal")) {
+    } else if (callbackData.startsWith("cancel_reveal")) {
       const [, userId] = callbackData.split(" ");
 
       if (ctx.from.id.toString() !== userId) {
