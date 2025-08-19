@@ -38,7 +38,8 @@ composer.on("callback_query:data", async (ctx) => {
     }
 
     await ctx.answerCallbackQuery(`Starting ${selectedLevel} game...`);
-    return await startGame(ctx, chatId, selectedLevel);
+    await startGame(ctx, chatId, selectedLevel);
+    return ctx.deleteMessage();
   } else if (callbackData.startsWith("leaderboard")) {
     const [, searchKey, timeKey] = ctx.callbackQuery.data.split(" ");
     if (!allowedChatSearchKeys.includes(searchKey as AllowedChatSearchKey))
@@ -285,5 +286,3 @@ composer.on("callback_query:data", async (ctx) => {
 
   return await ctx.answerCallbackQuery({ text: "Invalid action." });
 });
-
-export const callbackQueryHandler = composer;
