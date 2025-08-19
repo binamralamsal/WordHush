@@ -119,7 +119,7 @@ composer.on("callback_query:data", async (ctx) => {
     // callbackData === "show_all_hints" ||
     callbackData === "reveal_letter" ||
     callbackData.startsWith("confirm_reveal") ||
-    callbackData.startsWith("confirm_reveal") 
+    callbackData.startsWith("cancel_reveal") 
   ) {
     const data = await redis.get(`game:${chatId}`);
     const existingGame = data && redisGameSchema.safeParse(JSON.parse(data));
