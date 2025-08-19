@@ -68,7 +68,7 @@ export async function startGame(
         level.charAt(0).toUpperCase() + level.slice(1)
       } Word Game Started!</blockquote>
       
-<b>Hint 1:</b> ${data.hints[0]}`,
+<b>1:</b> ${data.hints[0]}`,
       {
         parse_mode: "HTML",
         reply_markup: createGameKeyboard(),
