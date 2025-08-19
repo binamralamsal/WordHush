@@ -119,7 +119,7 @@ composer.on("callback_query:data", async (ctx) => {
     // callbackData === "show_all_hints" ||
     callbackData === "reveal_letter" ||
     callbackData.startsWith("confirm_reveal") ||
-    callbackData === "cancel_reveal"
+    callbackData.startsWith("confirm_reveal") 
   ) {
     const data = await redis.get(`game:${chatId}`);
     const existingGame = data && redisGameSchema.safeParse(JSON.parse(data));
@@ -205,7 +205,7 @@ composer.on("callback_query:data", async (ctx) => {
                   text: "✅ Yes, reveal a letter",
                   callback_data: `confirm_reveal ${ctx.from.id}`,
                 },
-                { text: "❌ No, cancel", callback_data: "cancel_reveal" },
+                { text: "❌ No, cancel", callback_data: `cancel_reveal ${ctx.from.id}` },
               ],
             ],
           },
@@ -282,7 +282,7 @@ composer.on("callback_query:data", async (ctx) => {
           parse_mode: "HTML",
         },
       );
-    } else if (callbackData === "cancel_reveal") {
+    } else if (callbackData.startsWith("confirm_reveal")) {
       const [, userId] = callbackData.split(" ");
 
       if (ctx.from.id.toString() !== userId) {
