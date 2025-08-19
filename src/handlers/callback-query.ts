@@ -71,7 +71,7 @@ composer.on("callback_query:data", async (ctx) => {
           parse_mode: "HTML",
         },
       )
-      .catch(console.error);
+      .catch(() => {});
   } else if (callbackData.startsWith("myscore")) {
     const [, userId, searchKey, timeKey] = ctx.callbackQuery.data.split(" ");
     if (!allowedChatSearchKeys.includes(searchKey as AllowedChatSearchKey))
@@ -90,7 +90,7 @@ composer.on("callback_query:data", async (ctx) => {
 
     if (!userScore)
       return ctx.answerCallbackQuery({
-        text: "No one has scored yet.",
+        text: "You have no scores recorded yet for this query.",
         show_alert: true,
       });
 

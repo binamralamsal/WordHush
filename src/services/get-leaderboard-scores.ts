@@ -11,7 +11,7 @@ export async function getLeaderboardScores({
   searchKey: "group" | "global";
   timeKey: "today" | "week" | "month" | "year" | "all";
 }) {
-  const leaderboardQuery = db
+  let leaderboardQuery = db
     .selectFrom("leaderboard")
     .innerJoin("users", "users.id", "leaderboard.userId")
     .select((eb) => [
@@ -26,25 +26,31 @@ export async function getLeaderboardScores({
     .orderBy(sql`sum(${sql.ref("leaderboard.score")}) desc`)
     .limit(20);
 
+  console.log(searchKey, timeKey);
+
   if (searchKey === "group")
-    leaderboardQuery.where("leaderboard.chatId", "=", chatId);
+    leaderboardQuery = leaderboardQuery.where(
+      "leaderboard.chatId",
+      "=",
+      chatId,
+    );
   if (timeKey !== "all") {
-    leaderboardQuery.where((eb) => {
+    leaderboardQuery = leaderboardQuery.where((eb) => {
       if (timeKey === "today")
         return eb(
-          sql`date_trunc('day', leaderboard.createdAt)`,
+          sql`date_trunc('day', ${eb.ref("leaderboard.createdAt")})`,
           "=",
           sql<Date>`date_trunc('day', now())`,
         );
       else if (timeKey === "week")
         return eb(
-          sql`date_trunc('week', leaderboard.createdAt)`,
+          sql`date_trunc('week', ${eb.ref("leaderboard.createdAt")})`,
           "=",
           sql<Date>`date_trunc('week', now())`,
         );
       else if (timeKey === "month")
         return eb(
-          sql`date_trunc('month', leaderboard.createdAt)`,
+          sql`date_trunc('month', ${eb.ref("leaderboard.createdAt")})`,
           "=",
           sql<Date>`date_trunc('month', now())`,
         );

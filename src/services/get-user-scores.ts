@@ -16,7 +16,7 @@ export async function getUserScores({
 }) {
   const userQuery = db
     .selectFrom((eb) => {
-      const innerQuery = eb
+      let innerQuery = eb
         .selectFrom("leaderboard")
         .select("leaderboard.userId")
         .select(sql<number>`sum(leaderboard.score)`.as("totalScore"))
@@ -28,26 +28,26 @@ export async function getUserScores({
         );
 
       if (searchKey === "group") {
-        innerQuery.where("leaderboard.chatId", "=", chatId);
+        innerQuery = innerQuery.where("leaderboard.chatId", "=", chatId);
       }
 
       if (timeKey !== "all") {
-        innerQuery.where((eb) => {
+        innerQuery = innerQuery.where((eb) => {
           if (timeKey === "today")
             return eb(
-              sql`date_trunc('day', leaderboard.createdAt)`,
+              sql`date_trunc('day', ${eb.ref("leaderboard.createdAt")})`,
               "=",
               sql<Date>`date_trunc('day', now())`,
             );
           else if (timeKey === "week")
             return eb(
-              sql`date_trunc('week', leaderboard.createdAt)`,
+              sql`date_trunc('week', ${eb.ref("leaderboard.createdAt")})`,
               "=",
               sql<Date>`date_trunc('week', now())`,
             );
           else if (timeKey === "month")
             return eb(
-              sql`date_trunc('month', leaderboard.createdAt)`,
+              sql`date_trunc('month', ${eb.ref("leaderboard.createdAt")})`,
               "=",
               sql<Date>`date_trunc('month', now())`,
             );
