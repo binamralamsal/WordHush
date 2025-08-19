@@ -10,8 +10,6 @@ import { getWordWithHints } from "./hints";
 export function createGameKeyboard() {
   return new InlineKeyboard()
     .text("💡 Reveal new hint", "reveal_hint")
-    .text("📒 Show all hints", "show_all_hints")
-    .row()
     .text("🔠 Reveal a letter (-2 🏵)", "reveal_letter");
 }
 

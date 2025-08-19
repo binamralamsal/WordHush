@@ -115,7 +115,7 @@ composer.on("callback_query:data", async (ctx) => {
 
   condition: if (
     callbackData === "reveal_hint" ||
-    callbackData === "show_all_hints" ||
+    // callbackData === "show_all_hints" ||
     callbackData === "reveal_letter" ||
     callbackData.startsWith("confirm_reveal")
   ) {
@@ -147,21 +147,7 @@ composer.on("callback_query:data", async (ctx) => {
         }),
       );
 
-      await ctx.reply(
-        `<b>Hint ${nextHintIndex + 1}:</b> ${
-          existingGame.data.hints[nextHintIndex]
-        }`,
-        { parse_mode: "HTML", reply_markup: createGameKeyboard() },
-      );
-
-      return await ctx.answerCallbackQuery(
-        `Hint ${nextHintIndex + 1} revealed!`,
-      );
-    } else if (callbackData === "show_all_hints") {
-      const revealedHints = existingGame.data.hints.slice(
-        0,
-        existingGame.data.currentHintIndex + 1,
-      );
+      const revealedHints = existingGame.data.hints.slice(0, nextHintIndex);
 
       const correctWord = existingGame.data.words[0];
       if (!correctWord) break condition;
@@ -172,14 +158,41 @@ composer.on("callback_query:data", async (ctx) => {
           : null;
 
       await ctx.reply(
-        `<blockquote>All Hints Revealed:</blockquote>\n${hint ? `\n<b>Hint: </b><code>${hint}</code>\n\n` : ""}${revealedHints
+        `<blockquote>All Hints:</blockquote>\n${hint ? `\n<b>Hint: </b><code>${hint}</code>\n\n` : ""}${revealedHints
           .map((hint, index) => `${index + 1}: ${hint}`)
           .join("\n")}`,
         { parse_mode: "HTML", reply_markup: createGameKeyboard() },
       );
+      ctx.deleteMessage();
 
-      return await ctx.answerCallbackQuery("All revealed hints shown!");
-    } else if (callbackData === "reveal_letter") {
+      return await ctx.answerCallbackQuery(
+        `Hint ${nextHintIndex + 1} revealed!`,
+      );
+    }
+    // else if (callbackData === "show_all_hints") {
+    //   const revealedHints = existingGame.data.hints.slice(
+    //     0,
+    //     existingGame.data.currentHintIndex + 1,
+    //   );
+
+    //   const correctWord = existingGame.data.words[0];
+    //   if (!correctWord) break condition;
+
+    //   const hint =
+    //     existingGame.data.revealedPositions.length > 0
+    //       ? createLetterHint(correctWord, existingGame.data.revealedPositions)
+    //       : null;
+
+    //   await ctx.reply(
+    //     `<blockquote>All Hints Revealed:</blockquote>\n${hint ? `\n<b>Hint: </b><code>${hint}</code>\n\n` : ""}${revealedHints
+    //       .map((hint, index) => `${index + 1}: ${hint}`)
+    //       .join("\n")}`,
+    //     { parse_mode: "HTML", reply_markup: createGameKeyboard() },
+    //   );
+
+    //   return await ctx.answerCallbackQuery("All revealed hints shown!");
+    // }
+    else if (callbackData === "reveal_letter") {
       await ctx.reply(
         `<a href="tg://user?id=${ctx.from.id}">${ctx.from.first_name + (ctx.from.last_name ? " " + ctx.from.last_name : "")}</a> Are you sure you want to reveal a letter? This costs 2 coins.`,
         {
