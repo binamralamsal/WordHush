@@ -63,7 +63,6 @@ export async function startGame(
       }),
     );
 
-    console.log(data.words);
     await ctx.api.editMessageText(
       chatId,
       generatingMessage.message_id,

@@ -4,9 +4,10 @@ export const env = z
   .object({
     BOT_TOKEN: z.string().min(1, { message: "BOT_TOKEN is required" }),
     DATABASE_URL: z.string().min(1, { message: "DATABASE_URL is required" }),
-    GEMINI_API_KEY: z
+    GEMINI_API_KEYS: z
       .string()
-      .min(1, { message: "GEMINI_API_KEY is required" }),
+      .min(1, { message: "GEMINI_API_KEYS is required" })
+      .transform((val) => val.split(" ").filter(Boolean)),
     NODE_ENV: z.enum(["development", "production"]).default("development"),
     ADMIN_USERS: z
       .string()
