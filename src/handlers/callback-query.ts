@@ -119,7 +119,7 @@ composer.on("callback_query:data", async (ctx) => {
     // callbackData === "show_all_hints" ||
     callbackData === "reveal_letter" ||
     callbackData.startsWith("confirm_reveal") ||
-    callbackData.startsWith("cancel_reveal") 
+    callbackData.startsWith("cancel_reveal")
   ) {
     const data = await redis.get(`game:${chatId}`);
     const existingGame = data && redisGameSchema.safeParse(JSON.parse(data));
@@ -159,8 +159,12 @@ composer.on("callback_query:data", async (ctx) => {
           ? createLetterHint(correctWord, existingGame.data.revealedPositions)
           : null;
 
+      const level = existingGame.data.level;
+
       await ctx.reply(
-        `<blockquote>All Hints:</blockquote>\n${hint ? `\n<b>Hint: </b><code>${hint}</code>\n\n` : ""}${revealedHints
+        `<blockquote>All Hints for ${
+          level.charAt(0).toUpperCase() + level.slice(1)
+        } level:</blockquote>\n${hint ? `\n<b>Hint: </b><code>${hint}</code>\n\n` : ""}${revealedHints
           .map((hint, index) => `${index + 1}: ${hint}`)
           .join("\n")}`,
         { parse_mode: "HTML", reply_markup: createGameKeyboard() },
@@ -169,31 +173,7 @@ composer.on("callback_query:data", async (ctx) => {
       return await ctx.answerCallbackQuery(
         `Hint ${nextHintIndex + 1} revealed!`,
       );
-    }
-    // else if (callbackData === "show_all_hints") {
-    //   const revealedHints = existingGame.data.hints.slice(
-    //     0,
-    //     existingGame.data.currentHintIndex + 1,
-    //   );
-
-    //   const correctWord = existingGame.data.words[0];
-    //   if (!correctWord) break condition;
-
-    //   const hint =
-    //     existingGame.data.revealedPositions.length > 0
-    //       ? createLetterHint(correctWord, existingGame.data.revealedPositions)
-    //       : null;
-
-    //   await ctx.reply(
-    //     `<blockquote>All Hints Revealed:</blockquote>\n${hint ? `\n<b>Hint: </b><code>${hint}</code>\n\n` : ""}${revealedHints
-    //       .map((hint, index) => `${index + 1}: ${hint}`)
-    //       .join("\n")}`,
-    //     { parse_mode: "HTML", reply_markup: createGameKeyboard() },
-    //   );
-
-    //   return await ctx.answerCallbackQuery("All revealed hints shown!");
-    // }
-    else if (callbackData === "reveal_letter") {
+    } else if (callbackData === "reveal_letter") {
       await ctx.reply(
         `<a href="tg://user?id=${ctx.from.id}">${ctx.from.first_name + (ctx.from.last_name ? " " + ctx.from.last_name : "")}</a> Are you sure you want to reveal a letter? This costs 2 coins.`,
         {
@@ -204,7 +184,10 @@ composer.on("callback_query:data", async (ctx) => {
                   text: "✅ Yes, reveal a letter",
                   callback_data: `confirm_reveal ${ctx.from.id}`,
                 },
-                { text: "❌ No, cancel", callback_data: `cancel_reveal ${ctx.from.id}` },
+                {
+                  text: "❌ No, cancel",
+                  callback_data: `cancel_reveal ${ctx.from.id}`,
+                },
               ],
             ],
           },
@@ -290,7 +273,7 @@ composer.on("callback_query:data", async (ctx) => {
           show_alert: true,
         });
       }
-      
+
       await ctx.deleteMessage();
     }
   }
