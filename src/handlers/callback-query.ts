@@ -1,6 +1,7 @@
 import { Composer } from "grammy";
 
 import { sql } from "kysely";
+import z from "zod";
 
 import {
   allowedChatSearchKeys,
@@ -132,6 +133,8 @@ composer.on("callback_query:data", async (ctx) => {
     }
 
     if (callbackData === "reveal_hint") {
+      const rateLimitSchema = z.array(z.number());
+
       const currentIndex = existingGame.data.currentHintIndex;
       if (currentIndex >= existingGame.data.hints.length - 1) {
         return await ctx.answerCallbackQuery({
@@ -139,6 +142,58 @@ composer.on("callback_query:data", async (ctx) => {
           show_alert: true,
         });
       }
+
+      const userId = ctx.from.id;
+      const rateLimitKey = `hint_rate_limit:${userId}`;
+      const blockKey = `hint_blocked:${userId}`;
+
+      const isBlocked = await redis.get(blockKey);
+      if (isBlocked) {
+        await ctx.answerCallbackQuery({
+          text: "You are blocked for spamming. Please wait before requesting more hints.",
+          show_alert: true,
+        });
+        return;
+      }
+
+      const rateLimitData = await redis.get(rateLimitKey);
+      let attempts: number[] = [];
+
+      if (rateLimitData) {
+        try {
+          const parsed = JSON.parse(rateLimitData);
+          const validatedAttempts = rateLimitSchema.safeParse(parsed);
+          attempts = validatedAttempts.success ? validatedAttempts.data : [];
+        } catch {
+          attempts = [];
+        }
+      }
+
+      // Remove attempts older than 10 seconds
+      const now = Date.now();
+      attempts = attempts.filter(
+        (timestamp: number) => now - timestamp < 10000,
+      );
+
+      if (attempts.length >= 2) {
+        await redis.setex(blockKey, 30, "true");
+
+        await ctx.answerCallbackQuery({
+          text: "You are not allowed for 30 seconds for spamming.",
+          show_alert: true,
+        });
+
+        await ctx.reply(
+          `🚫 <a href="tg://user?id=${ctx.from.id}">${ctx.from.first_name + (ctx.from.last_name ? " " + ctx.from.last_name : "")}</a> have been blocked for 30 seconds for spamming hint requests.`,
+          { parse_mode: "HTML" },
+        );
+
+        return;
+      }
+
+      attempts.push(now);
+
+      await redis.setex(rateLimitKey, 10, JSON.stringify(attempts));
 
       const nextHintIndex = currentIndex + 1;
       await redis.set(
