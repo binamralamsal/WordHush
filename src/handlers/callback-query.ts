@@ -170,6 +170,8 @@ composer.on("callback_query:data", async (ctx) => {
         { parse_mode: "HTML", reply_markup: createGameKeyboard() },
       );
 
+      ctx.editMessageReplyMarkup({ reply_markup: { inline_keyboard: [] } });
+
       return await ctx.answerCallbackQuery(
         `Hint ${nextHintIndex + 1} revealed!`,
       );
