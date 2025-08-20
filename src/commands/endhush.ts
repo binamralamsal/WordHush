@@ -24,10 +24,11 @@ composer.command("endhush", async (ctx) => {
   }
 
   await ctx.reply(
-    `<blockquote>🏳️ <b>Game Ended</b></blockquote>
+    `<blockquote>🎮 <b>Game Ended</b></blockquote>
 
-The word was: <b>${existingGame.data.words[0]}</b>
-All possible forms: ${existingGame.data.words.join(", ")}
+<blockquote><b>Word:</b> ${existingGame.data.words[0]}
+<b>All possible forms:</b> ${existingGame.data.words.join(", ")}
+<b>Example:</b> ${existingGame.data.sentence}</blockquote>
 
 Start a new game with /newhush`,
     { parse_mode: "HTML" },

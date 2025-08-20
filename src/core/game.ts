@@ -17,6 +17,7 @@ export const redisGameSchema = z.object({
   words: z.array(z.string()).nonempty(),
   hints: z.array(z.string()),
   level: z.enum(difficultyLevels),
+  sentence: z.string(),
   currentHintIndex: z.number().default(0),
   revealedPositions: z.array(z.number()).default([]),
 });
@@ -56,11 +57,13 @@ export async function startGame(
       JSON.stringify({
         words: data.words,
         hints: data.hints,
+        sentence: data.sentence,
         currentHintIndex: 1,
         level,
       }),
     );
 
+    console.log(data.words);
     await ctx.api.editMessageText(
       chatId,
       generatingMessage.message_id,

@@ -164,7 +164,6 @@ composer.on("callback_query:data", async (ctx) => {
           .join("\n")}`,
         { parse_mode: "HTML", reply_markup: createGameKeyboard() },
       );
-      ctx.deleteMessage();
 
       return await ctx.answerCallbackQuery(
         `Hint ${nextHintIndex + 1} revealed!`,
@@ -286,7 +285,7 @@ composer.on("callback_query:data", async (ctx) => {
     }
   }
 
-  return await ctx.answerCallbackQuery({ text: "Invalid action." });
+  return await ctx.answerCallbackQuery();
 });
 
 export const callbackQueryHandler = composer;

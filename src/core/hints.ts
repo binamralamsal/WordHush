@@ -8,6 +8,7 @@ import { WordSelector } from "../util/word-selector";
 const hintsSchema = z.object({
   words: z.array(z.string()),
   hints: z.array(z.string()),
+  sentence: z.string(),
 });
 
 export async function getWordWithHints(

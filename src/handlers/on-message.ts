@@ -65,9 +65,10 @@ composer.on("message:text", async (ctx) => {
     ctx.reply(
       `<blockquote><b>🎉 Congratulations! You guessed it right + ${score} 🏵</b></blockquote>
 
-✅ The word was: <b>${userGuess}</b>
-All possible forms: ${gameState.data.words.join(", ")}
+<blockquote><b>Word:</b> ${userGuess}
+<b>All possible forms:</b> ${gameState.data.words.join(", ")}
 Added ${score} points to the leaderboard.
+<b>Example:</b> ${gameState.data.sentence}</blockquote>
 
 Start a new game with /newhush`,
       { parse_mode: "HTML", reply_parameters: { message_id: ctx.msgId } },
