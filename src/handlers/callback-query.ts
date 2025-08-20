@@ -8,6 +8,7 @@ import {
   allowedChatTimeKeys,
 } from "../config/constants";
 import { db } from "../config/db";
+import { env } from "../config/env";
 import { redis } from "../config/redis";
 import { createGameKeyboard, redisGameSchema, startGame } from "../core/game";
 import { getLeaderboardScores } from "../services/get-leaderboard-scores";
@@ -125,6 +126,8 @@ composer.on("callback_query:data", async (ctx) => {
     const data = await redis.get(`game:${chatId}`);
     const existingGame = data && redisGameSchema.safeParse(JSON.parse(data));
 
+    if (!ctx.msgId) return;
+
     if (!existingGame || !existingGame.success) {
       return await ctx.answerCallbackQuery({
         text: "No active game found. Start a new game with /newhush",
@@ -175,7 +178,7 @@ composer.on("callback_query:data", async (ctx) => {
         (timestamp: number) => now - timestamp < 10000,
       );
 
-      if (attempts.length >= 2) {
+      if (!env.ADMIN_USERS.includes(ctx.from.id) && attempts.length >= 2) {
         await redis.setex(blockKey, 30, "true");
 
         await ctx.answerCallbackQuery({
@@ -216,16 +219,29 @@ composer.on("callback_query:data", async (ctx) => {
 
       const level = existingGame.data.level;
 
-      await ctx.reply(
-        `<blockquote>All Hints for ${
-          level.charAt(0).toUpperCase() + level.slice(1)
-        } level:</blockquote>\n${hint ? `\n<b>Hint: </b><code>${hint}</code>\n\n` : ""}${revealedHints
-          .map((hint, index) => `${index + 1}: ${hint}`)
-          .join("\n")}`,
-        { parse_mode: "HTML", reply_markup: createGameKeyboard() },
-      );
+      const message = `<blockquote>All Hints for ${
+        level.charAt(0).toUpperCase() + level.slice(1)
+      } level:</blockquote>\n${hint ? `\n<b>Hint: </b><code>${hint}</code>\n\n` : ""}${revealedHints
+        .map((hint, index) => `${index + 1}: ${hint}`)
+        .join("\n")}`;
 
-      ctx.editMessageReplyMarkup({ reply_markup: { inline_keyboard: [] } });
+      const latestMsgId = await redis.get(`msg:${chatId}`);
+      if (
+        latestMsgId &&
+        parseInt(latestMsgId, Number.MAX_VALUE) - ctx.msgId > 5
+      ) {
+        await ctx.reply(message, {
+          parse_mode: "HTML",
+          reply_markup: createGameKeyboard(),
+        });
+
+        ctx.editMessageReplyMarkup({ reply_markup: { inline_keyboard: [] } });
+      } else {
+        await ctx.editMessageText(message, {
+          parse_mode: "HTML",
+          reply_markup: createGameKeyboard(),
+        });
+      }
 
       return await ctx.answerCallbackQuery(
         `Hint ${nextHintIndex + 1} revealed!`,

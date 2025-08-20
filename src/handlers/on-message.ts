@@ -23,6 +23,9 @@ composer.on("message:text", async (ctx) => {
   const gameState = data ? redisGameSchema.safeParse(JSON.parse(data)) : null;
 
   if (!gameState || !gameState.success) return;
+
+  await redis.set(`msg:${chatId}`, ctx.msgId);
+
   const level = gameState.data.level;
 
   const correctGuess = gameState.data.words.some(

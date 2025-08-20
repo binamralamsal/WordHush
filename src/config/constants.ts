@@ -30,6 +30,7 @@ Your output must be in **strict JSON format** as follows:
 4. Output strictly as JSON **without any backticks, code blocks, comments, or extra formatting**.  
 5. Do not add explanations, instructions, or anything outside the JSON.  
 6. Make hints creative, indirect, and engaging for guessing the word.  
+7. "sentence" property of object should include the correct word as that's only showed when game ends.
 `;
 
 export const allowedChatSearchKeys = ["global", "group"] as const;
