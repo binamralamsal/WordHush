@@ -17,14 +17,14 @@ composer.on("message:text", async (ctx) => {
   const username = ctx.from.username;
   const userId = ctx.from.id.toString();
 
-  if (userGuess.startsWith("/")) return;
-
   const data = await redis.get(`game:${chatId}`);
   const gameState = data ? redisGameSchema.safeParse(JSON.parse(data)) : null;
 
   if (!gameState || !gameState.success) return;
 
   await redis.set(`msg:${chatId}`, ctx.msgId);
+
+  if (userGuess.startsWith("/")) return;
 
   const level = gameState.data.level;
 

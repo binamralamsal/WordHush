@@ -7,14 +7,32 @@ import { redis } from "../config/redis";
 import type { DifficultyLevels } from "../types";
 import { getWordWithHints } from "./hints";
 
-export function createGameKeyboard(noReveal = false) {
+export function calculateRevealPrice(level: DifficultyLevels) {
+  return level === "easy"
+    ? 2
+    : level === "medium"
+      ? 4
+      : level === "hard"
+        ? 6
+        : 8;
+}
+
+export function createGameKeyboard({
+  noReveal = false,
+  level,
+}: {
+  noReveal?: boolean;
+  level: DifficultyLevels;
+}) {
   const inlineKeyboard = new InlineKeyboard().text(
     "💡 Reveal new hint",
     "reveal_hint",
   );
 
   if (!noReveal) {
-    inlineKeyboard.text("🔠 Reveal a letter (-2 🏵)", "reveal_letter");
+    const price = calculateRevealPrice(level);
+
+    inlineKeyboard.text(`🔠 Reveal a letter (-${price} 🏵)`, "reveal_letter");
   }
 
   return inlineKeyboard;
@@ -93,7 +111,7 @@ export async function startGame(
 <b>1:</b> ${data.hints[0]}`,
       {
         parse_mode: "HTML",
-        reply_markup: createGameKeyboard(),
+        reply_markup: createGameKeyboard({ level }),
       },
     );
   } catch (error) {

@@ -10,7 +10,12 @@ import {
 import { db } from "../config/db";
 import { env } from "../config/env";
 import { redis } from "../config/redis";
-import { createGameKeyboard, redisGameSchema, startGame } from "../core/game";
+import {
+  calculateRevealPrice,
+  createGameKeyboard,
+  redisGameSchema,
+  startGame,
+} from "../core/game";
 import { getLeaderboardScores } from "../services/get-leaderboard-scores";
 import { getUserScores } from "../services/get-user-scores";
 import type { AllowedChatSearchKey, AllowedChatTimeKey } from "../types";
@@ -117,7 +122,6 @@ composer.on("callback_query:data", async (ctx) => {
 
   condition: if (
     callbackData === "reveal_hint" ||
-    // callbackData === "show_all_hints" ||
     callbackData === "reveal_letter" ||
     callbackData.startsWith("confirm_reveal") ||
     callbackData.startsWith("cancel_reveal")
@@ -225,24 +229,24 @@ composer.on("callback_query:data", async (ctx) => {
         .join("\n")}`;
 
       const latestMsgId = await redis.get(`msg:${chatId}`);
+      const inlineKeyboard = createGameKeyboard({
+        noReveal: existingGame.data.revealedPositions.length >= 3,
+        level: existingGame.data.level,
+      });
       if (
         latestMsgId &&
         parseInt(latestMsgId, Number.MAX_VALUE) - ctx.msgId > 5
       ) {
         await ctx.reply(message, {
           parse_mode: "HTML",
-          reply_markup: createGameKeyboard(
-            existingGame.data.revealedPositions.length >= 3,
-          ),
+          reply_markup: inlineKeyboard,
         });
 
         ctx.editMessageReplyMarkup({ reply_markup: { inline_keyboard: [] } });
       } else {
         await ctx.editMessageText(message, {
           parse_mode: "HTML",
-          reply_markup: createGameKeyboard(
-            existingGame.data.revealedPositions.length >= 3,
-          ),
+          reply_markup: inlineKeyboard,
         });
       }
 
@@ -251,7 +255,7 @@ composer.on("callback_query:data", async (ctx) => {
       );
     } else if (callbackData === "reveal_letter") {
       await ctx.reply(
-        `<a href="tg://user?id=${ctx.from.id}">${ctx.from.first_name + (ctx.from.last_name ? " " + ctx.from.last_name : "")}</a> Are you sure you want to reveal a letter? This costs 2 coins.`,
+        `<a href="tg://user?id=${ctx.from.id}">${ctx.from.first_name + (ctx.from.last_name ? " " + ctx.from.last_name : "")}</a> Are you sure you want to reveal a letter? This costs ${calculateRevealPrice(existingGame.data.level)} coins.`,
         {
           reply_markup: {
             inline_keyboard: [
@@ -338,14 +342,16 @@ composer.on("callback_query:data", async (ctx) => {
 
       await db
         .updateTable("users")
-        .set({ coins: sql`coins - 2` })
+        .set({
+          coins: sql`coins - ${calculateRevealPrice(existingGame.data.level)}`,
+        })
         .where("id", "=", ctx.from.id.toString())
         .execute();
 
       const hint = createLetterHint(correctWord, updatedRevealed);
 
       await ctx.editMessageText(
-        `<blockquote><a href="tg://user?id=${ctx.from.id}">${ctx.from.first_name + (ctx.from.last_name ? " " + ctx.from.last_name : "")}</a> revealed a letter. -2 🏵</blockquote>\n\n<b>Revealed Letter:</b> ${hint}`,
+        `<blockquote><a href="tg://user?id=${ctx.from.id}">${ctx.from.first_name + (ctx.from.last_name ? " " + ctx.from.last_name : "")}</a> revealed a letter. -${calculateRevealPrice(existingGame.data.level)} 🏵</blockquote>\n\n<b>Revealed Letter:</b> ${hint}`,
         {
           parse_mode: "HTML",
         },
