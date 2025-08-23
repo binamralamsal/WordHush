@@ -40,8 +40,7 @@ composer.on("callback_query:data", async (ctx) => {
     }
 
     await ctx.answerCallbackQuery(`Starting ${selectedLevel} game...`);
-    await startGame(ctx, chatId, selectedLevel);
-    return ctx.deleteMessage();
+    await startGame(ctx, chatId, selectedLevel, true);
   } else if (callbackData.startsWith("leaderboard")) {
     const [, searchKey, timeKey] = ctx.callbackQuery.data.split(" ");
     if (!allowedChatSearchKeys.includes(searchKey as AllowedChatSearchKey))
@@ -178,7 +177,7 @@ composer.on("callback_query:data", async (ctx) => {
         (timestamp: number) => now - timestamp < 10000,
       );
 
-      if (!env.ADMIN_USERS.includes(ctx.from.id) && attempts.length >= 2) {
+      if (!env.ADMIN_USERS.includes(ctx.from.id) && attempts.length >= 5) {
         await redis.setex(blockKey, 30, "true");
 
         await ctx.answerCallbackQuery({
@@ -232,14 +231,18 @@ composer.on("callback_query:data", async (ctx) => {
       ) {
         await ctx.reply(message, {
           parse_mode: "HTML",
-          reply_markup: createGameKeyboard(),
+          reply_markup: createGameKeyboard(
+            existingGame.data.revealedPositions.length >= 3,
+          ),
         });
 
         ctx.editMessageReplyMarkup({ reply_markup: { inline_keyboard: [] } });
       } else {
         await ctx.editMessageText(message, {
           parse_mode: "HTML",
-          reply_markup: createGameKeyboard(),
+          reply_markup: createGameKeyboard(
+            existingGame.data.revealedPositions.length >= 3,
+          ),
         });
       }
 
@@ -295,6 +298,14 @@ composer.on("callback_query:data", async (ctx) => {
 
       const revealedPosition = existingGame.data.revealedPositions;
 
+      if (revealedPosition.length >= 3) {
+        ctx.deleteMessage();
+        return await ctx.answerCallbackQuery({
+          text: "You have already revealed 3 letters, cannot reveal more.",
+          show_alert: true,
+        });
+      }
+
       const allPositions = Array.from(
         { length: correctWord.length },
         (_, i) => i,
@@ -303,11 +314,13 @@ composer.on("callback_query:data", async (ctx) => {
         (i) => !revealedPosition.includes(i),
       );
 
-      if (remainingPositions.length === 0)
+      if (remainingPositions.length === 0) {
+        ctx.deleteMessage();
         return await ctx.answerCallbackQuery({
           text: "All letters are already revealed.",
           show_alert: true,
         });
+      }
 
       const randomIndex = Math.floor(Math.random() * remainingPositions.length);
       const newPosition = remainingPositions[randomIndex];
