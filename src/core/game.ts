@@ -21,10 +21,14 @@ export function calculateScore(level: DifficultyLevels, hintsUsed: number) {
   const baseScore =
     level === "easy" ? 5 : level === "medium" ? 10 : level === "hard" ? 20 : 30;
 
-  const maxDeduction = baseScore * 0.5;
-  const scoreDeduction = Math.floor(Math.min(hintsUsed * 1.5, maxDeduction));
+  const penaltyPerHint =
+    level === "easy" ? 0.25 : level === "medium" ? 0.5 : level === "hard" ? 0.75 : 1;
 
-  return Math.max(baseScore - scoreDeduction, 1);
+  const maxDeduction = baseScore * (level === "easy" ? 0.3 : 0.4);
+
+  const scoreDeduction = Math.min(hintsUsed * penaltyPerHint, maxDeduction);
+
+  return Math.max(Math.round(baseScore - scoreDeduction), 1);
 }
 
 export function createGameKeyboard({
