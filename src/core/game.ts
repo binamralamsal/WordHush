@@ -17,6 +17,16 @@ export function calculateRevealPrice(level: DifficultyLevels) {
         : 8;
 }
 
+export function calculateScore(level: DifficultyLevels, hintsUsed: number) {
+  const baseScore =
+    level === "easy" ? 5 : level === "medium" ? 10 : level === "hard" ? 20 : 30;
+
+  const maxDeduction = baseScore * 0.5;
+  const scoreDeduction = Math.floor(Math.min(hintsUsed * 1.5, maxDeduction));
+
+  return Math.max(baseScore - scoreDeduction, 1);
+}
+
 export function createGameKeyboard({
   noReveal = false,
   level,
@@ -82,7 +92,6 @@ export async function startGame(
     }
 
     const data = await getWordWithHints(level, chatId);
-
     if (!data || data.hints.length === 0) {
       return await ctx.api.editMessageText(
         chatId,

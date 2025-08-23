@@ -1,10 +1,11 @@
-import { Composer } from "grammy";
+import { Composer, Context, GrammyError } from "grammy";
+import type { ReactionTypeEmoji } from "grammy/types";
 
 import { sql } from "kysely";
 
 import { db } from "../config/db";
 import { redis } from "../config/redis";
-import { redisGameSchema } from "../core/game";
+import { calculateScore, redisGameSchema } from "../core/game";
 
 const composer = new Composer();
 
@@ -33,14 +34,7 @@ composer.on("message:text", async (ctx) => {
   );
 
   if (correctGuess) {
-    const score =
-      level === "easy"
-        ? 5
-        : level === "medium"
-          ? 10
-          : level === "hard"
-            ? 20
-            : 30;
+    const score = calculateScore(level, gameState.data.currentHintIndex - 1);
 
     const user = await db
       .insertInto("users")
@@ -76,6 +70,8 @@ Added ${score} points to the leaderboard.
 Start a new game with /newhush`,
       { parse_mode: "HTML", reply_parameters: { message_id: ctx.msgId } },
     );
+
+    reactWithRandom(ctx);
     return await redis.del(`game:${chatId}`);
   } else if (isGuessSimilar(userGuess, gameState.data.words)) {
     ctx.reply("🔥 You're close! Try again or get more hints.", {
@@ -83,6 +79,37 @@ Start a new game with /newhush`,
     });
   }
 });
+
+async function reactWithRandom(ctx: Context) {
+  const emojis: ReactionTypeEmoji["emoji"][] = [
+    "🎉",
+    "🏆",
+    "🤩",
+    "⚡",
+    "🫡",
+    "💯",
+    "❤‍🔥",
+    "🦄",
+  ];
+
+  const shuffled = emojis.sort(() => Math.random() - 0.5);
+
+  for (const emoji of shuffled) {
+    try {
+      await ctx.react(emoji);
+      return;
+    } catch (err) {
+      if (
+        err instanceof GrammyError &&
+        err.description?.includes("REACTION_NOT_ALLOWED")
+      ) {
+        continue;
+      } else {
+        break;
+      }
+    }
+  }
+}
 
 export const onMessageHander = composer;
 
