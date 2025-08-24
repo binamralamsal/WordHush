@@ -28,6 +28,8 @@ Welcome to WordHush - the ultimate word guessing game where our AI gives you cle
 ⚡ <b>Game Controls:</b>
 <code>/endhush</code> - End current game
 <code>/help</code> - Show commands and rules
+<code>/sethushtopic</code> - Use this to set a topic in a group to play the game. It will ignore other topics.
+<code>/unsethushtopic</code> - Use this command to unset the game topic.
 
 Ready to test your word skills? Type <code>/newhush</code> to begin! 🧠✨`,
     { parse_mode: "HTML" },

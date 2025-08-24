@@ -21,6 +21,21 @@ composer.on("message:text", async (ctx) => {
   const data = await redis.get(`game:${chatId}`);
   const gameState = data ? redisGameSchema.safeParse(JSON.parse(data)) : null;
 
+  if (ctx.chat.is_forum) {
+    const topicData = await db
+      .selectFrom("chatGameTopics")
+      .where("chatId", "=", chatId.toString())
+      .selectAll()
+      .execute();
+    const topicIds = topicData.map((t) => t.topicId);
+
+    if (
+      topicData.length > 0 &&
+      !topicIds.includes(ctx.msg.message_thread_id?.toString() || "")
+    )
+      return;
+  }
+
   if (!gameState || !gameState.success) return;
 
   await redis.set(`msg:${chatId}`, ctx.msgId);

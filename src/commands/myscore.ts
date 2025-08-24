@@ -1,5 +1,6 @@
 import { Composer } from "grammy";
 
+import { db } from "../config/db";
 import { getUserScores } from "../services/get-user-scores";
 import { CommandsHelper } from "../util/commands-helper";
 import { formatUserScoreMessage } from "../util/format-user-score-message";
@@ -10,6 +11,25 @@ const composer = new Composer();
 
 composer.command("myscore", async (ctx) => {
   if (!ctx.from) return;
+
+  const chatId = ctx.chat.id.toString();
+
+  if (ctx.chat.is_forum) {
+    const topicData = await db
+      .selectFrom("chatGameTopics")
+      .where("chatId", "=", chatId.toString())
+      .selectAll()
+      .execute();
+    const topicIds = topicData.map((t) => t.topicId);
+
+    if (
+      topicData.length > 0 &&
+      !topicIds.includes(ctx.msg.message_thread_id?.toString() || "")
+    )
+      return await ctx.reply(
+        "This topic is not set for the game. Please play the game in the designated topic.",
+      );
+  }
 
   const { searchKey, timeKey } = parseLeaderboardInput(
     ctx.match,
@@ -23,7 +43,6 @@ composer.command("myscore", async (ctx) => {
   );
 
   const userId = ctx.from.id.toString();
-  const chatId = ctx.chat.id.toString();
   const userScores = await getUserScores({
     userId,
     chatId,

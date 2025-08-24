@@ -1,5 +1,6 @@
 import { Composer, InlineKeyboard } from "grammy";
 
+import { db } from "../config/db";
 import { env } from "../config/env";
 import { redis } from "../config/redis";
 import { redisGameSchema, startGame } from "../core/game";
@@ -28,6 +29,24 @@ composer.command("newhush", async (ctx) => {
     );
 
   if (!ctx.message) return;
+
+  if (ctx.chat.is_forum) {
+    const topicData = await db
+      .selectFrom("chatGameTopics")
+      .where("chatId", "=", chatId.toString())
+      .selectAll()
+      .execute();
+    const topicIds = topicData.map((t) => t.topicId);
+
+    if (
+      topicData.length > 0 &&
+      !topicIds.includes(ctx.msg.message_thread_id?.toString() || "")
+    )
+      return await ctx.reply(
+        "This topic is not set for the game. Please play the game in the designated topic.",
+      );
+  }
+
   const args = ctx.message?.text.split(" ");
 
   const difficultyArg = args[1]?.toLowerCase();

@@ -92,6 +92,7 @@ export async function startGame(
     }
 
     const data = await getWordWithHints(level, chatId);
+    console.log(data.words);
     if (!data || data.hints.length === 0) {
       return await ctx.api.editMessageText(
         chatId,
