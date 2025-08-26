@@ -56,7 +56,7 @@ export async function getLeaderboardScores({
         );
       else
         return eb(
-          "leaderboard.createdAt",
+          sql`date_trunc('year', ${eb.ref("leaderboard.createdAt")})`,
           "=",
           sql<Date>`date_trunc('year', now())`,
         );
