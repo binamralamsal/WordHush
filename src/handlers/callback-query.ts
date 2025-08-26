@@ -65,7 +65,7 @@ composer.on("callback_query:data", async (ctx) => {
       timeKey as AllowedChatTimeKey,
     );
 
-    return await ctx
+    await ctx
       .editMessageText(
         formatLeaderboardMessage(
           memberScores,
