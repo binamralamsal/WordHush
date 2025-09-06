@@ -18,6 +18,7 @@ bot.use(commands);
 bot.use(callbackQueryHandler);
 bot.use(onMessageHander);
 
+await bot.api.deleteWebhook({ drop_pending_updates: true });
 run(bot);
 
 console.log("Bot started");
