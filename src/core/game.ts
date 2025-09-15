@@ -22,7 +22,13 @@ export function calculateScore(level: DifficultyLevels, hintsUsed: number) {
     level === "easy" ? 5 : level === "medium" ? 10 : level === "hard" ? 20 : 30;
 
   const penaltyPerHint =
-    level === "easy" ? 0.25 : level === "medium" ? 0.5 : level === "hard" ? 0.75 : 1;
+    level === "easy"
+      ? 0.25
+      : level === "medium"
+        ? 0.5
+        : level === "hard"
+          ? 0.75
+          : 1;
 
   const maxDeduction = baseScore * (level === "easy" ? 0.3 : 0.4);
 
@@ -96,7 +102,6 @@ export async function startGame(
     }
 
     const data = await getWordWithHints(level, chatId);
-    console.log(data.words);
     if (!data || data.hints.length === 0) {
       return await ctx.api.editMessageText(
         chatId,

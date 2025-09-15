@@ -39,8 +39,20 @@ export interface User {
   username: string | null;
 }
 
+export interface WordHint {
+  createdAt: Generated<Timestamp>;
+  hints: string[];
+  id: Generated<number>;
+  level: GameLevel;
+  relatedWords: string[];
+  sentence: string;
+  updatedAt: Generated<Timestamp>;
+  word: string;
+}
+
 export interface DB {
   chatGameTopics: ChatGameTopic;
   leaderboard: Leaderboard;
   users: User;
+  wordHints: WordHint;
 }

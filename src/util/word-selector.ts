@@ -47,7 +47,9 @@ export class WordSelector {
     if (!allWords.length)
       throw new Error("No words available for the selected level");
 
-    const historyKey = `h:${chatId}`;
+    // const historyKey = `h:${chatId}`;
+    // TODO: TEMPORARY CHANGE
+    const historyKey = `temp_history`;
 
     try {
       const pipeline = redis.pipeline();

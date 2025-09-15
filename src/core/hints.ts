@@ -1,6 +1,8 @@
+import { sql } from "kysely";
 import z from "zod";
 
 import { SYSTEM_PROMPT } from "../config/constants";
+import { db } from "../config/db";
 import { env } from "../config/env";
 import type { DifficultyLevels } from "../types";
 import { APIKeyManager } from "../util/key-manager";
@@ -22,13 +24,14 @@ export async function getWordWithHints(
 ) {
   let lastError: Error | null = null;
 
+  const wordSelector = new WordSelector({ level });
+  const randomWord = await wordSelector.getRandomWord(chatId);
+
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       const { genAI } = await keyManager.getWorkingKey();
       const ai = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-      const wordSelector = new WordSelector({ level });
-      const randomWord = await wordSelector.getRandomWord(chatId);
       const prompt = `${SYSTEM_PROMPT}\n\nLevel: ${level}\nWord: ${randomWord}`;
 
       const result = await ai.generateContent(prompt);
@@ -38,7 +41,17 @@ export async function getWordWithHints(
       const parsed = JSON.parse(text);
       const validated = hintsSchema.parse(parsed);
 
-      return validated;
+      db.insertInto("wordHints")
+        .values({
+          hints: validated.hints,
+          relatedWords: validated.words,
+          level,
+          sentence: validated.sentence,
+          word: randomWord,
+        })
+        .execute();
+
+      return { ...validated, randomWord };
     } catch (error) {
       lastError = error as Error;
       const { key } = await keyManager.getWorkingKey();
@@ -53,6 +66,41 @@ export async function getWordWithHints(
         break;
       }
     }
+  }
+
+  const result1 = await db
+    .selectFrom("wordHints")
+    .selectAll()
+    .where("level", "=", level)
+    .where("word", "=", randomWord)
+    .orderBy(sql`RANDOM()`)
+    .limit(1)
+    .executeTakeFirst();
+
+  if (result1) {
+    return {
+      words: result1.relatedWords,
+      hints: result1.hints,
+      sentence: result1.sentence,
+      randomWord: result1.word,
+    };
+  }
+
+  const result2 = await db
+    .selectFrom("wordHints")
+    .selectAll()
+    .where("level", "=", level)
+    .orderBy(sql`RANDOM()`)
+    .limit(1)
+    .executeTakeFirst();
+
+  if (result2) {
+    return {
+      words: result2.relatedWords,
+      hints: result2.hints,
+      sentence: result2.sentence,
+      randomWord: result2.word,
+    };
   }
 
   throw new Error(
