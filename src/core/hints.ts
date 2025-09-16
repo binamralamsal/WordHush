@@ -12,15 +12,27 @@ const keyManager = new APIKeyManager();
 
 keyManager.initialize();
 
+const FREE_MODELS = [
+  "gemini-2.5-flash",
+  "gemini-2.5-flash-lite",
+  "gemini-2.5-pro",
+  "gemini-2.0-flash",
+  "gemini-2.0-flash-lite",
+  "gemini-1.5-flash",
+  "gemini-1.5-flash-8b",
+  "gemini-1.5-pro",
+];
+
 const hintsSchema = z.object({
   words: z.array(z.string()),
   hints: z.array(z.string()),
   sentence: z.string(),
 });
+
 export async function getWordWithHints(
   level: DifficultyLevels,
   chatId: number,
-  maxRetries: number = env.GEMINI_API_KEYS.length * 2,
+  maxRetries: number = env.GEMINI_API_KEYS.length * FREE_MODELS.length * 2,
 ) {
   let lastError: Error | null = null;
 
@@ -30,18 +42,23 @@ export async function getWordWithHints(
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       const { genAI } = await keyManager.getWorkingKey();
-      const ai = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+      // pick model by attempt, but cap so that after trying all, you loop around
+      const modelIndex = (attempt - 1) % FREE_MODELS.length;
+      const modelName = FREE_MODELS[modelIndex];
+
+      const ai = genAI.getGenerativeModel({ model: modelName });
 
       const prompt = `${SYSTEM_PROMPT}\n\nLevel: ${level}\nWord: ${randomWord}`;
-
       const result = await ai.generateContent(prompt);
+
       let text = result.response.text();
       text = text.replace(/```json|```/g, "").trim();
 
       const parsed = JSON.parse(text);
       const validated = hintsSchema.parse(parsed);
 
-      db.insertInto("wordHints")
+      await db.insertInto("wordHints")
         .values({
           hints: validated.hints,
           relatedWords: validated.words,
@@ -57,8 +74,10 @@ export async function getWordWithHints(
       const { key } = await keyManager.getWorkingKey();
 
       if (isAPIKeyError(error as Error)) {
+        // mark key as failed
         await keyManager.markKeyAsFailed(key);
       } else {
+        // maybe transient error: wait a bit
         await new Promise((resolve) => setTimeout(resolve, 1000));
       }
 
