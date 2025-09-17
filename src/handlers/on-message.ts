@@ -6,6 +6,7 @@ import { sql } from "kysely";
 import { db } from "../config/db";
 import { redis } from "../config/redis";
 import { calculateScore, redisGameSchema } from "../core/game";
+import { escapeHtmlEntities } from "../util/escape-html-entities";
 
 const composer = new Composer();
 
@@ -80,7 +81,7 @@ composer.on("message:text", async (ctx) => {
 <blockquote><b>Word:</b> ${userGuess}
 <b>All possible forms:</b> ${gameState.data.words.join(", ")}
 Added ${score} points to the leaderboard.
-<b>Example:</b> ${gameState.data.sentence}</blockquote>
+<b>Example:</b> ${escapeHtmlEntities(gameState.data.sentence)}</blockquote>
 
 Start a new game with /newhush`,
       { parse_mode: "HTML", reply_parameters: { message_id: ctx.msgId } },
