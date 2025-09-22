@@ -4,6 +4,7 @@ import { db } from "../config/db";
 import { redis } from "../config/redis";
 import { redisGameSchema } from "../core/game";
 import { CommandsHelper } from "../util/commands-helper";
+import { escapeHtmlEntities } from "../util/escape-html-entities";
 
 const composer = new Composer();
 
@@ -41,7 +42,7 @@ composer.command("endhush", async (ctx) => {
 
 <blockquote><b>Word:</b> ${existingGame.data.words[0]}
 <b>All possible forms:</b> ${existingGame.data.words.join(", ")}
-<b>Example:</b> ${existingGame.data.sentence}</blockquote>
+<b>Example:</b> ${escapeHtmlEntities(existingGame.data.sentence)}</blockquote>
 
 Start a new game with /newhush`,
     { parse_mode: "HTML" },
