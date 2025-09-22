@@ -5,7 +5,8 @@ import z from "zod";
 import { difficultyLevels } from "../config/constants";
 import { redis } from "../config/redis";
 import type { DifficultyLevels } from "../types";
-import { getWordWithHints } from "./hints";
+import { WordSelector } from "../util/word-selector";
+import { getAndStoreHintsFromAI, getWordWithHints } from "./hints";
 
 export function calculateRevealPrice(level: DifficultyLevels) {
   return level === "easy"
@@ -101,7 +102,18 @@ export async function startGame(
       messageIdToEdit = sentMessage.message_id;
     }
 
-    const data = await getWordWithHints(level, chatId);
+    let alreadyStored = false;
+
+    // For every game, it takes data from database
+    const wordSelector = new WordSelector({ level });
+    const randomWord = await wordSelector.getRandomWord(chatId);
+
+    let data = await getWordWithHints(randomWord, level);
+    if (!data) {
+      data = await getAndStoreHintsFromAI(level, randomWord);
+      alreadyStored = true;
+    }
+
     if (!data || data.hints.length === 0) {
       return await ctx.api.editMessageText(
         chatId,
@@ -109,8 +121,15 @@ export async function startGame(
         "Failed to generate word hints. Please try again.",
       );
     }
+    const redisPipeline = redis.pipeline();
 
-    await redis.set(
+    if (randomWord !== data.randomWord) {
+      const historyKey = wordSelector.getHistoryKey(chatId);
+      redisPipeline.sadd(historyKey, data.randomWord);
+      redisPipeline.srem(historyKey, randomWord);
+    }
+
+    redisPipeline.set(
       `game:${chatId}`,
       JSON.stringify({
         words: data.words,
@@ -120,6 +139,8 @@ export async function startGame(
         level,
       }),
     );
+
+    await redisPipeline.exec();
 
     await ctx.api.editMessageText(
       chatId,
@@ -133,6 +154,8 @@ export async function startGame(
         reply_markup: createGameKeyboard({ level }),
       },
     );
+
+    if (!alreadyStored) getAndStoreHintsFromAI(level, randomWord);
   } catch (error) {
     console.error("Error starting game:", error);
     ctx.reply("An error occurred while starting the game. Please try again.");

@@ -233,6 +233,7 @@ composer.on("callback_query:data", async (ctx) => {
         noReveal: existingGame.data.revealedPositions.length >= 3,
         level: existingGame.data.level,
       });
+
       if (
         latestMsgId &&
         parseInt(latestMsgId, Number.MAX_VALUE) - ctx.msgId > 5

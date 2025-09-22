@@ -29,11 +29,15 @@ export class WordSelector {
 
   constructor(config: Partial<WordSelectorConfig> = {}) {
     this.config = {
-      historySize: config.historySize ?? 50,
+      historySize: config.historySize ?? 100,
       resetThreshold: config.resetThreshold ?? 10,
       ttlSeconds: config.ttlSeconds ?? 7 * 24 * 60 * 60, // 7 days
       level: config.level ?? "easy",
     };
+  }
+
+  getHistoryKey(chatId: string | number) {
+    return `h:${chatId}`;
   }
 
   async getRandomWord(chatId: string | number): Promise<string> {
@@ -47,9 +51,7 @@ export class WordSelector {
     if (!allWords.length)
       throw new Error("No words available for the selected level");
 
-    // const historyKey = `h:${chatId}`;
-    // TODO: TEMPORARY CHANGE
-    const historyKey = `temp_history`;
+    const historyKey = this.getHistoryKey(chatId);
 
     try {
       const pipeline = redis.pipeline();

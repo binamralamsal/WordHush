@@ -6,7 +6,6 @@ import { db } from "../config/db";
 import { env } from "../config/env";
 import type { DifficultyLevels } from "../types";
 import { APIKeyManager } from "../util/key-manager";
-import { WordSelector } from "../util/word-selector";
 
 const keyManager = new APIKeyManager();
 
@@ -18,56 +17,9 @@ const hintsSchema = z.object({
   sentence: z.string(),
 });
 export async function getWordWithHints(
+  randomWord: string,
   level: DifficultyLevels,
-  chatId: number,
-  maxRetries: number = env.GEMINI_API_KEYS.length * 2,
 ) {
-  let lastError: Error | null = null;
-
-  const wordSelector = new WordSelector({ level });
-  const randomWord = await wordSelector.getRandomWord(chatId);
-
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      const { genAI } = await keyManager.getWorkingKey();
-      const ai = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-
-      const prompt = `${SYSTEM_PROMPT}\n\nLevel: ${level}\nWord: ${randomWord}`;
-
-      const result = await ai.generateContent(prompt);
-      let text = result.response.text();
-      text = text.replace(/```json|```/g, "").trim();
-
-      const parsed = JSON.parse(text);
-      const validated = hintsSchema.parse(parsed);
-
-      db.insertInto("wordHints")
-        .values({
-          hints: validated.hints,
-          relatedWords: validated.words,
-          level,
-          sentence: validated.sentence,
-          word: randomWord,
-        })
-        .execute();
-
-      return { ...validated, randomWord };
-    } catch (error) {
-      lastError = error as Error;
-      const { key } = await keyManager.getWorkingKey();
-
-      if (isAPIKeyError(error as Error)) {
-        await keyManager.markKeyAsFailed(key);
-      } else {
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-      }
-
-      if (attempt === maxRetries || keyManager.getAvailableKeysCount() === 0) {
-        break;
-      }
-    }
-  }
-
   const result1 = await db
     .selectFrom("wordHints")
     .selectAll()
@@ -102,10 +54,52 @@ export async function getWordWithHints(
       randomWord: result2.word,
     };
   }
+}
 
-  throw new Error(
-    `Failed to get response after ${maxRetries} attempts. Last error: ${lastError?.message}`,
-  );
+export async function getAndStoreHintsFromAI(
+  level: DifficultyLevels,
+  randomWord: string,
+  maxRetries: number = env.GEMINI_API_KEYS.length * 2,
+) {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const { genAI } = await keyManager.getWorkingKey();
+      const ai = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+      const prompt = `${SYSTEM_PROMPT}\n\nLevel: ${level}\nWord: ${randomWord}`;
+
+      const result = await ai.generateContent(prompt);
+      let text = result.response.text();
+      text = text.replace(/```json|```/g, "").trim();
+
+      const parsed = JSON.parse(text);
+      const validated = hintsSchema.parse(parsed);
+
+      db.insertInto("wordHints")
+        .values({
+          hints: validated.hints,
+          relatedWords: validated.words,
+          level,
+          sentence: validated.sentence,
+          word: randomWord,
+        })
+        .execute();
+
+      return { ...validated, randomWord };
+    } catch (error) {
+      const { key } = await keyManager.getWorkingKey();
+
+      if (isAPIKeyError(error as Error)) {
+        await keyManager.markKeyAsFailed(key);
+      } else {
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+      }
+
+      if (attempt === maxRetries || keyManager.getAvailableKeysCount() === 0) {
+        break;
+      }
+    }
+  }
 }
 
 function isAPIKeyError(error: Error): boolean {
