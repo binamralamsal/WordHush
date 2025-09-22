@@ -47,6 +47,7 @@ export async function getWordWithHints(
     };
   }
 
+  // Comment lines below if all words don't have hints in database.
   const result2 = await db
     .selectFrom("wordHints")
     .selectAll()
