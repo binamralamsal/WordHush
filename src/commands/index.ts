@@ -6,6 +6,7 @@ import { leaderboardCommand } from "./leaderboard";
 import { myscoreCommand } from "./myscore";
 import { newhushCommand } from "./newhush";
 import { setGameTopicCommand } from "./setgametopic";
+import { statsCommand } from "./stats";
 import { unsetGameTopicCommand } from "./unsetgametopic";
 
 const composer = new Composer();
@@ -18,6 +19,7 @@ composer.use(
   myscoreCommand,
   setGameTopicCommand,
   unsetGameTopicCommand,
+  statsCommand,
 );
 
 export const commands = composer;
