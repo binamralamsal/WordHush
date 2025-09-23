@@ -1,5 +1,6 @@
 import { Composer } from "grammy";
 
+import { promises as fs } from "fs";
 import os from "os";
 import process from "process";
 
@@ -11,7 +12,6 @@ const composer = new Composer();
 
 composer.command("stats", async (ctx) => {
   if (!ctx.from) return;
-
   if (!env.ADMIN_USERS.includes(ctx.from.id)) return;
 
   const botUptime = process.uptime();
@@ -23,10 +23,16 @@ composer.command("stats", async (ctx) => {
   const freeMemory = os.freemem();
   const usedMemory = totalMemory - freeMemory;
 
-  const cpuUsage = process.cpuUsage();
-  console.log(cpuUsage);
-  const cpus = os.cpus();
+  let availableMemory = freeMemory;
+  try {
+    const meminfo = await fs.readFile("/proc/meminfo", "utf8");
+    const match = meminfo.match(/^MemAvailable:\s+(\d+)\s+kB$/m);
+    if (match && match[1]) availableMemory = parseInt(match[1], 10) * 1024;
+  } catch {
+    // pass
+  }
 
+  const cpus = os.cpus();
   const loadAvg = os.loadavg();
 
   const [usersResult, groupsResult] = await Promise.all([
@@ -45,16 +51,15 @@ composer.command("stats", async (ctx) => {
   const groupsCount = groupsResult.groupsCount;
 
   const formatBytes = (bytes: number) => {
-    if (bytes === 0) return "0 B";
+    if (!bytes) return "0 B";
     const k = 1024;
-    const sizes = ["B", "KB", "MB", "GB"];
+    const sizes = ["B", "KB", "MB", "GB", "TB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
 
-  const formatPercent = (used: number, total: number) => {
-    return ((used / total) * 100).toFixed(1);
-  };
+  const formatPercent = (used: number, total: number) =>
+    ((used / total) * 100).toFixed(1);
 
   let statsMessage = `🤖 <b>Bot Statistics</b>\n\n`;
 
@@ -84,7 +89,7 @@ composer.command("stats", async (ctx) => {
   statsMessage += `├ Total: ${formatBytes(totalMemory)}\n`;
   statsMessage += `├ Used: ${formatBytes(usedMemory)} (${formatPercent(usedMemory, totalMemory)}%)\n`;
   statsMessage += `├ Free: ${formatBytes(freeMemory)} (${formatPercent(freeMemory, totalMemory)}%)\n`;
-  statsMessage += `└ Available: ${formatBytes(freeMemory)}</blockquote>\n\n`;
+  statsMessage += `└ Available: ${formatBytes(availableMemory ?? freeMemory)}${availableMemory ? "" : " (fallback)"}</blockquote>\n\n`;
 
   // VPS Load
   statsMessage += `<blockquote>⚡ <b>VPS Load</b>\n`;
@@ -100,12 +105,10 @@ composer.command("stats", async (ctx) => {
   statsMessage += `<blockquote>📈 <b>Performance</b>\n`;
   statsMessage += `├ Heap Usage: ${heapPercent.toFixed(1)}%\n`;
   statsMessage += `├ System Memory: ${systemMemPercent.toFixed(3)}%\n`;
-  statsMessage += `├ Bun Version: ${process.version}\n`;
+  statsMessage += `├ Bun Version: ${Bun?.version || process.version}\n`;
   statsMessage += `└ Platform: ${process.platform}</blockquote>`;
 
-  return ctx.reply(statsMessage, {
-    parse_mode: "HTML",
-  });
+  return ctx.reply(statsMessage, { parse_mode: "HTML" });
 });
 
 CommandsHelper.addNewCommand(
