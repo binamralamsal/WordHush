@@ -155,7 +155,7 @@ export async function startGame(
       },
     );
 
-    if (!alreadyStored) getAndStoreHintsFromAI(level, randomWord);
+    // if (!alreadyStored) getAndStoreHintsFromAI(level, randomWord);
   } catch (error) {
     console.error("Error starting game:", error);
     ctx.reply("An error occurred while starting the game. Please try again.");
