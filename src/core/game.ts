@@ -98,7 +98,9 @@ export async function startGame(
       ctx.editMessageText("🤖 Generating AI Hints...");
       messageIdToEdit = ctx.msgId;
     } else {
-      const sentMessage = await ctx.reply("🤖 Generating AI Hints...");
+      const sentMessage = await ctx.reply("🤖 Generating AI Hints...", {
+        protect_content: true,
+      });
       messageIdToEdit = sentMessage.message_id;
     }
 

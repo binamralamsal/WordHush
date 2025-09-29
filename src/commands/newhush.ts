@@ -61,6 +61,7 @@ composer.command("newhush", async (ctx) => {
     await ctx.reply("🎯 **Choose your difficulty level:**", {
       parse_mode: "Markdown",
       reply_markup: createDifficultyKeyboard(),
+      protect_content: true,
     });
     return;
   }

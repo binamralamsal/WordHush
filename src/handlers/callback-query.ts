@@ -241,6 +241,7 @@ composer.on("callback_query:data", async (ctx) => {
         await ctx.reply(message, {
           parse_mode: "HTML",
           reply_markup: inlineKeyboard,
+          protect_content: true,
         });
 
         ctx.editMessageReplyMarkup({ reply_markup: { inline_keyboard: [] } });
