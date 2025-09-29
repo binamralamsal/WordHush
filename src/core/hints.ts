@@ -81,7 +81,12 @@ export async function getAndStoreHintsFromAI(
 
       const ai = genAI.getGenerativeModel({ model: modelName });
 
-      const prompt = `${SYSTEM_PROMPT}\n\nLevel: ${level}\nWord: ${randomWord}`;
+      const prompt = `${SYSTEM_PROMPT}
+
+**THE WORD TO CREATE HINTS FOR:** ${randomWord}
+**DIFFICULTY LEVEL:** ${level}
+
+Create hints for the word "${randomWord}" at ${level} difficulty level.`;
       const result = await ai.generateContent(prompt);
 
       let text = result.response.text();
