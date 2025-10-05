@@ -16,6 +16,24 @@ composer.command("unsetgametopic", async (ctx) => {
     return;
   }
 
+  try {
+    const chatMember = await ctx.api.getChatMember(
+      ctx.chat.id,
+      ctx.message.from.id,
+    );
+
+    const allowedStatus = ["administrator", "creator"];
+    if (!allowedStatus.includes(chatMember.status)) {
+      return ctx.reply("Only admins can use this command.");
+    }
+  }
+  catch (err) {
+    return ctx.reply(
+      "⚠️ I couldn't verify admin rights.\n" +
+      "👉 Please make sure I’m an admin in this group."
+    );
+  }
+
   const topicId = ctx.msg.message_thread_id;
 
   if (!topicId) {
