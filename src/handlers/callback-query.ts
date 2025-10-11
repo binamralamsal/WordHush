@@ -9,7 +9,7 @@ import {
 } from "../config/constants";
 import { db } from "../config/db";
 import { env } from "../config/env";
-import { redis } from "../config/redis";
+import { REDIS_PREFIX, redis } from "../config/redis";
 import {
   calculateRevealPrice,
   createGameKeyboard,
@@ -126,7 +126,7 @@ composer.on("callback_query:data", async (ctx) => {
     callbackData.startsWith("confirm_reveal") ||
     callbackData.startsWith("cancel_reveal")
   ) {
-    const data = await redis.get(`game:${chatId}`);
+    const data = await redis.get(`${REDIS_PREFIX}game:${chatId}`);
     const existingGame = data && redisGameSchema.safeParse(JSON.parse(data));
 
     if (!ctx.msgId) return;
@@ -150,8 +150,8 @@ composer.on("callback_query:data", async (ctx) => {
       }
 
       const userId = ctx.from.id;
-      const rateLimitKey = `hint_rate_limit:${userId}`;
-      const blockKey = `hint_blocked:${userId}`;
+      const rateLimitKey = `${REDIS_PREFIX}hint_rate_limit:${userId}`;
+      const blockKey = `${REDIS_PREFIX}hint_blocked:${userId}`;
 
       const isBlocked = await redis.get(blockKey);
       if (isBlocked) {
@@ -203,7 +203,7 @@ composer.on("callback_query:data", async (ctx) => {
 
       const nextHintIndex = currentIndex + 1;
       await redis.set(
-        `game:${chatId}`,
+        `${REDIS_PREFIX}game:${chatId}`,
         JSON.stringify({
           ...existingGame.data,
           currentHintIndex: nextHintIndex,
@@ -228,16 +228,13 @@ composer.on("callback_query:data", async (ctx) => {
         .map((hint, index) => `${index + 1}: ${hint}`)
         .join("\n")}`;
 
-      const latestMsgId = await redis.get(`msg:${chatId}`);
+      const latestMsgId = await redis.get(`${REDIS_PREFIX}msg:${chatId}`);
       const inlineKeyboard = createGameKeyboard({
         noReveal: existingGame.data.revealedPositions.length >= 3,
         level: existingGame.data.level,
       });
 
-      if (
-        latestMsgId &&
-        parseInt(latestMsgId, Number.MAX_VALUE) - ctx.msgId > 5
-      ) {
+      if (latestMsgId && parseInt(latestMsgId) - ctx.msgId > 5) {
         await ctx.reply(message, {
           parse_mode: "HTML",
           reply_markup: inlineKeyboard,
@@ -335,7 +332,7 @@ composer.on("callback_query:data", async (ctx) => {
       const updatedRevealed = [...revealedPosition, newPosition];
 
       await redis.set(
-        `game:${chatId}`,
+        `${REDIS_PREFIX}game:${chatId}`,
         JSON.stringify({
           ...existingGame.data,
           revealedPositions: updatedRevealed,

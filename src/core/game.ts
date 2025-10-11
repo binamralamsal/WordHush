@@ -3,7 +3,7 @@ import { type Context, InlineKeyboard } from "grammy";
 import z from "zod";
 
 import { difficultyLevels } from "../config/constants";
-import { redis } from "../config/redis";
+import { REDIS_PREFIX, redis } from "../config/redis";
 import type { DifficultyLevels } from "../types";
 import { WordSelector } from "../util/word-selector";
 import { getAndStoreHintsFromAI, getWordWithHints } from "./hints";
@@ -74,7 +74,7 @@ export async function startGame(
   level: DifficultyLevels,
   isCallback = false,
 ) {
-  const data = await redis.get(`game:${chatId}`);
+  const data = await redis.get(`${REDIS_PREFIX}game:${chatId}`);
   if (data) {
     const existingGame = redisGameSchema.safeParse(JSON.parse(data));
     if (existingGame.success) {
@@ -123,26 +123,31 @@ export async function startGame(
         "Failed to generate word hints. Please try again.",
       );
     }
-    const redisPipeline = redis.pipeline();
+
+    const operations = [];
 
     if (randomWord !== data.randomWord) {
       const historyKey = wordSelector.getHistoryKey(chatId);
-      redisPipeline.sadd(historyKey, data.randomWord);
-      redisPipeline.srem(historyKey, randomWord);
+      operations.push(
+        redis.sadd(historyKey, data.randomWord),
+        redis.srem(historyKey, randomWord),
+      );
     }
 
-    redisPipeline.set(
-      `game:${chatId}`,
-      JSON.stringify({
-        words: data.words,
-        hints: data.hints,
-        sentence: data.sentence,
-        currentHintIndex: 1,
-        level,
-      }),
+    operations.push(
+      redis.set(
+        `${REDIS_PREFIX}game:${chatId}`,
+        JSON.stringify({
+          words: data.words,
+          hints: data.hints,
+          sentence: data.sentence,
+          currentHintIndex: 1,
+          level,
+        }),
+      ),
     );
 
-    await redisPipeline.exec();
+    await Promise.all(operations);
 
     await ctx.api.editMessageText(
       chatId,

@@ -4,7 +4,7 @@ import type { ReactionTypeEmoji } from "grammy/types";
 import { sql } from "kysely";
 
 import { db } from "../config/db";
-import { redis } from "../config/redis";
+import { REDIS_PREFIX, redis } from "../config/redis";
 import { calculateScore, redisGameSchema } from "../core/game";
 import { escapeHtmlEntities } from "../util/escape-html-entities";
 
@@ -19,7 +19,7 @@ composer.on("message:text", async (ctx) => {
   const username = ctx.from.username;
   const userId = ctx.from.id.toString();
 
-  const data = await redis.get(`game:${chatId}`);
+  const data = await redis.get(`${REDIS_PREFIX}game:${chatId}`);
   const gameState = data ? redisGameSchema.safeParse(JSON.parse(data)) : null;
 
   if (ctx.chat.is_forum) {
@@ -39,7 +39,7 @@ composer.on("message:text", async (ctx) => {
 
   if (!gameState || !gameState.success) return;
 
-  await redis.set(`msg:${chatId}`, ctx.msgId);
+  await redis.set(`${REDIS_PREFIX}msg:${chatId}`, ctx.msgId.toString());
 
   if (userGuess.startsWith("/")) return;
 
@@ -88,7 +88,7 @@ Start a new game with /newhush`,
     );
 
     reactWithRandom(ctx);
-    return await redis.del(`game:${chatId}`);
+    return await redis.del(`${REDIS_PREFIX}game:${chatId}`);
   } else if (isGuessSimilar(userGuess, gameState.data.words)) {
     ctx.reply("🔥 You're close! Try again or get more hints.", {
       reply_parameters: { message_id: ctx.msgId },

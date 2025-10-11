@@ -1,7 +1,7 @@
 import { Composer } from "grammy";
 
 import { db } from "../config/db";
-import { redis } from "../config/redis";
+import { REDIS_PREFIX, redis } from "../config/redis";
 import { redisGameSchema } from "../core/game";
 import { CommandsHelper } from "../util/commands-helper";
 import { escapeHtmlEntities } from "../util/escape-html-entities";
@@ -30,7 +30,7 @@ composer.command("endhush", async (ctx) => {
       );
   }
 
-  const data = await redis.get(`game:${chatId}`);
+  const data = await redis.get(`${REDIS_PREFIX}game:${chatId}`);
   const existingGame = data && redisGameSchema.safeParse(JSON.parse(data));
 
   if (!existingGame || !existingGame.success) {
@@ -48,7 +48,7 @@ Start a new game with /newhush`,
     { parse_mode: "HTML" },
   );
 
-  await redis.del(`game:${chatId}`);
+  await redis.del(`${REDIS_PREFIX}game:${chatId}`);
 });
 
 CommandsHelper.addNewCommand("endhush", "End hush game running in this chat");

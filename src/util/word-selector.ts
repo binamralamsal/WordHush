@@ -1,6 +1,6 @@
 import { randomInt } from "crypto";
 
-import { redis } from "../config/redis";
+import { REDIS_PREFIX, redis } from "../config/redis";
 import words from "../data/words.json";
 import type { DifficultyLevels } from "../types";
 
@@ -37,7 +37,7 @@ export class WordSelector {
   }
 
   getHistoryKey(chatId: string | number) {
-    return `h:${chatId}`;
+    return `${REDIS_PREFIX}h:${chatId}`;
   }
 
   async getRandomWord(chatId: string | number): Promise<string> {
@@ -54,17 +54,17 @@ export class WordSelector {
     const historyKey = this.getHistoryKey(chatId);
 
     try {
-      const pipeline = redis.pipeline();
-      pipeline.smembers(historyKey);
-      pipeline.scard(historyKey);
-      const results = await pipeline.exec();
+      const [members, count] = await Promise.all([
+        redis.smembers(historyKey),
+        redis.scard(historyKey),
+      ]);
 
-      if (!results || results.length !== 2) {
-        throw new Error("Pipeline failed");
+      if (members === undefined || count === undefined) {
+        throw new Error("Redis commands failed");
       }
 
-      const usedWords = results[0]![1] as string[];
-      const setSize = results[1]![1] as number;
+      const usedWords = members as string[];
+      const setSize = count as number;
 
       const availableWords = allWords.filter(
         (word) => !usedWords.includes(word.toLowerCase()),
@@ -84,16 +84,17 @@ export class WordSelector {
       const randomWord =
         availableWords[randomInt(0, availableWords.length)]!.toLowerCase();
 
-      const updatePipeline = redis.pipeline();
-      updatePipeline.sadd(historyKey, randomWord);
-      updatePipeline.expire(historyKey, this.config.ttlSeconds);
+      const operations: Promise<unknown>[] = [
+        redis.sadd(historyKey, randomWord),
+        redis.expire(historyKey, this.config.ttlSeconds),
+      ];
 
       if (setSize >= this.config.historySize) {
         const trimCount = Math.floor(this.config.historySize * 0.2);
-        updatePipeline.spop(historyKey, trimCount);
+        operations.push(redis.spop(historyKey, trimCount));
       }
 
-      await updatePipeline.exec();
+      await Promise.all(operations);
 
       return randomWord;
     } catch (error) {
@@ -103,12 +104,12 @@ export class WordSelector {
   }
 
   async resetChat(chatId: string | number) {
-    await redis.del(`h:${chatId}`);
+    await redis.del(`${REDIS_PREFIX}h:${chatId}`);
   }
 
   async getRecentWords(chatId: string | number) {
     try {
-      return await redis.smembers(`h:${chatId}`);
+      return await redis.smembers(`${REDIS_PREFIX}h:${chatId}`);
     } catch (error) {
       console.error("Error getting recent words:", error);
       return [];

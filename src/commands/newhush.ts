@@ -1,7 +1,7 @@
 import { Composer, InlineKeyboard } from "grammy";
 
 import { db } from "../config/db";
-import { redis } from "../config/redis";
+import { REDIS_PREFIX, redis } from "../config/redis";
 import { redisGameSchema, startGame } from "../core/game";
 import { CommandsHelper } from "../util/commands-helper";
 import { resolveDifficulty } from "../util/resolve-difficulty";
@@ -45,7 +45,7 @@ composer.command("newhush", async (ctx) => {
 
   const difficultyArg = args[1]?.toLowerCase();
 
-  const data = await redis.get(`game:${chatId}`);
+  const data = await redis.get(`${REDIS_PREFIX}game:${chatId}`);
   if (data) {
     const existingGame = redisGameSchema.safeParse(JSON.parse(data));
     if (existingGame.success) {

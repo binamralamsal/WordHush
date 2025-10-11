@@ -1,9 +1,9 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 import { env } from "../config/env";
-import { redis } from "../config/redis";
+import { REDIS_PREFIX, redis } from "../config/redis";
 
-const FAILED_KEYS_KEY = "gemini:failed_keys";
+const FAILED_KEYS_KEY = `${REDIS_PREFIX}gemini:failed_keys`;
 const RETRY_AFTER_MINUTES = 30;
 
 export class APIKeyManager {
