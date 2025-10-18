@@ -44,6 +44,7 @@
   /myscore global today
   ```
 - **/stats** - View bot usage statistics (admin users only).
+- **/suggestword** - Suggest a word for the game which doesn't exist in our database.
 
 ## Installation & Setup
 
@@ -116,7 +117,7 @@
   ```bash
   bun run db:seed
   ```
-- **Generate type definitions**: 
+- **Generate type definitions**:
   ```bash
   bun run db:codegen # run this after migrations
   ```

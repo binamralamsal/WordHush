@@ -13,23 +13,34 @@ composer.command("help", (ctx) =>
 Welcome to WordHush - the ultimate word guessing game where our AI gives you clever hints and you race to discover the hidden word!
 
 🎮 <b>How to Play:</b>
-• The AI will provide you with creative hints
-• Use your detective skills to guess the correct word
-• Challenge yourself across different difficulty levels
+- The AI will provide you with creative hints
+- Use your detective skills to guess the correct word
+- Challenge yourself across different difficulty levels
+- Track your progress and compete on the leaderboard
 
 🚀 <b>Start Playing:</b>
 <code>/newhush</code> - Interactive mode selection
-<code>/newhush easy</code> - Beginner friendly (3-4 letter words)
-<code>/newhush medium</code> - Standard challenge (5-6 letter words)  
-<code>/newhush hard</code> - Advanced level (7-8 letter words)
-<code>/newhush extreme</code> - Expert mode (9+ letter words)
+<code>/newhush easy</code> - Beginner friendly
+<code>/newhush medium</code> - Standard challenge
+<code>/newhush hard</code> - Advanced level
+<code>/newhush extreme</code> - Expert mode
 <code>/newhush random</code> - Surprise difficulty!
 
 ⚡ <b>Game Controls:</b>
 <code>/endhush</code> - End current game
-<code>/help</code> - Show commands and rules
-<code>/sethushtopic</code> - Use this to set a topic in a group to play the game. It will ignore other topics.
-<code>/unsethushtopic</code> - Use this command to unset the game topic.
+<code>/help</code> - Show this help message
+
+🎲 <b>Group Settings:</b>
+<code>/setgametopic</code> - Set a topic for group games
+<code>/unsetgametopic</code> - Remove topic filter
+
+📊 <b>Your Progress:</b>
+<code>/myscore</code> - View your personal statistics
+<code>/leaderboard</code> - See top players
+<code>/stats</code> - View bot statistics (Admin only)
+
+💡 <b>Want to suggest a word?</b>
+<code>/suggestword</code> - Suggest a word which doesn't exist in our database.
 
 Ready to test your word skills? Type <code>/newhush</code> to begin! 🧠✨`,
     { parse_mode: "HTML" },
