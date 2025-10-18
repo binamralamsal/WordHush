@@ -5,6 +5,7 @@ import { helpCommand } from "./help";
 import { leaderboardCommand } from "./leaderboard";
 import { myscoreCommand } from "./myscore";
 import { newhushCommand } from "./newhush";
+import { scoreCommand } from "./score";
 import { setGameTopicCommand } from "./setgametopic";
 import { statsCommand } from "./stats";
 import { suggestWordCommand } from "./suggestword";
@@ -22,6 +23,7 @@ composer.use(
   unsetGameTopicCommand,
   statsCommand,
   suggestWordCommand,
+  scoreCommand,
 );
 
 export const commands = composer;

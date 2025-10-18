@@ -38,11 +38,16 @@
   /leaderboard global week
   /leaderboard group month
   ```
-- **/myscore** - View your personal score and statistics. Example:
+ - **/score** - View your score or check another player's statistics. Example:
+  /score
+  /score @username
+  /score @username global month
+  /score 123456789 week
+  /score global today
   ```
-  /myscore group all
-  /myscore global today
-  ```
+  You can combine filters in any order:
+  - **Scope**: `group` (this chat) or `global` (all chats)
+  - **Time**: `today`, `week`, `month`, `year`, or `all` ```
 - **/stats** - View bot usage statistics (admin users only).
 - **/suggestword** - Suggest a word for the game which doesn't exist in our database.
 

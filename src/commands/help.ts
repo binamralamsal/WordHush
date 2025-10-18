@@ -35,7 +35,13 @@ Welcome to WordHush - the ultimate word guessing game where our AI gives you cle
 <code>/unsetgametopic</code> - Remove topic filter
 
 📊 <b>Your Progress:</b>
-<code>/myscore</code> - View your personal statistics
+<code>/score</code> - View your score or check another player's stats
+  • <code>/score</code> - View your own score
+  • <code>/score @username|user_id</code> - View another player's score
+  • <code>/score global</code> - View global rankings
+  • <code>/score week</code> - Filter by time period
+  • Mix filters: <code>/score @user global month</code>
+
 <code>/leaderboard</code> - See top players
 <code>/stats</code> - View bot statistics (Admin only)
 
