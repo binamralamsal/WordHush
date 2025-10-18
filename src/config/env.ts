@@ -17,5 +17,6 @@ export const env = z
     CUSTOM_API_ROOT: z
       .url({ message: "CUSTOM_API_ROOT must be a valid URL" })
       .default("https://api.telegram.org"), // default to official API
+    SUGGESTIONS_CHANNEL: z.string().optional(),
   })
   .parse(process.env);
