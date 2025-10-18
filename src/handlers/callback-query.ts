@@ -1,7 +1,6 @@
 import { sql } from 'kysely';
 import { Composer, InlineKeyboard } from "grammy";
 
-import { sql } from "kysely";
 import z from "zod";
 
 import {
@@ -81,7 +80,7 @@ composer.on("callback_query:data", async (ctx) => {
           parse_mode: "HTML",
         },
       )
-      .catch(() => {});
+      .catch(() => { });
   } else if (callbackData.startsWith("score_list")) {
     const parts = ctx.callbackQuery.data.split(" ");
 
@@ -106,15 +105,15 @@ composer.on("callback_query:data", async (ctx) => {
     await ctx
       .editMessageText(
         `⚠️ <strong>Multiple Users Found</strong>\n\n` +
-          `There are ${users.length} users with username @${username}. ` +
-          `This can happen when a user deletes their account and someone else creates a new account with the same username.\n\n` +
-          `Please select the user you want to view:`,
+        `There are ${users.length} users with username @${username}. ` +
+        `This can happen when a user deletes their account and someone else creates a new account with the same username.\n\n` +
+        `Please select the user you want to view:`,
         {
           parse_mode: "HTML",
           reply_markup: keyboard,
         },
       )
-      .catch(() => {});
+      .catch(() => { });
 
     return await ctx.answerCallbackQuery();
   } else if (callbackData.startsWith("score")) {
@@ -172,21 +171,21 @@ composer.on("callback_query:data", async (ctx) => {
 
         const keyboard = hasAnyScores
           ? generateLeaderboardKeyboard(
-              searchKey,
-              timeKey,
-              `score ${userId}`,
-              username ? backButtonDetails : undefined,
-            )
+            searchKey,
+            timeKey,
+            `score ${userId}`,
+            username ? backButtonDetails : undefined,
+          )
           : new InlineKeyboard().text(
-              backButtonDetails.text,
-              backButtonDetails.callback,
-            );
+            backButtonDetails.text,
+            backButtonDetails.callback,
+          );
 
         await ctx
           .editMessageText(message, {
             reply_markup: keyboard,
           })
-          .catch(() => {});
+          .catch(() => { });
 
         return ctx.answerCallbackQuery({
           text: "No scores found for the current filter.",
@@ -199,9 +198,9 @@ composer.on("callback_query:data", async (ctx) => {
         `score ${userId}`,
         username
           ? {
-              text: "⬅️ Back to user list",
-              callback: `score_list ${username}`,
-            }
+            text: "⬅️ Back to user list",
+            callback: `score_list ${username}`,
+          }
           : undefined,
       );
 
@@ -211,7 +210,7 @@ composer.on("callback_query:data", async (ctx) => {
           parse_mode: "HTML",
           link_preview_options: { is_disabled: true },
         })
-        .catch(() => {});
+        .catch(() => { });
 
       return await ctx.answerCallbackQuery();
     }
@@ -273,19 +272,17 @@ composer.on("callback_query:data", async (ctx) => {
           hasAnyScores,
         });
 
-        const keyboard = hasAnyScores
-          ? generateLeaderboardKeyboard(
-              searchKey as AllowedChatSearchKey,
-              timeKey as AllowedChatTimeKey,
-              `score ${userId}`,
-            )
-          : undefined;
+        const keyboard = generateLeaderboardKeyboard(
+          searchKey as AllowedChatSearchKey,
+          timeKey as AllowedChatTimeKey,
+          `score ${userId}`,
+        );
 
         await ctx
           .editMessageText(message, {
             reply_markup: keyboard,
           })
-          .catch(() => {});
+          .catch(() => { });
 
         return ctx.answerCallbackQuery({
           text: "No scores found for this period.",
@@ -308,7 +305,7 @@ composer.on("callback_query:data", async (ctx) => {
             link_preview_options: { is_disabled: true },
           },
         )
-        .catch(() => {});
+        .catch(() => { });
 
       return await ctx.answerCallbackQuery();
     }
@@ -416,11 +413,10 @@ composer.on("callback_query:data", async (ctx) => {
 
       const level = existingGame.data.level;
 
-      const message = `<blockquote>All Hints for ${
-        level.charAt(0).toUpperCase() + level.slice(1)
-      } level:</blockquote>\n${hint ? `\n<b>Hint: </b><code>${hint}</code>\n\n` : ""}${revealedHints
-        .map((hint, index) => `${index + 1}: ${hint}`)
-        .join("\n")}`;
+      const message = `<blockquote>All Hints for ${level.charAt(0).toUpperCase() + level.slice(1)
+        } level:</blockquote>\n${hint ? `\n<b>Hint: </b><code>${hint}</code>\n\n` : ""}${revealedHints
+          .map((hint, index) => `${index + 1}: ${hint}`)
+          .join("\n")}`;
 
       const latestMsgId = await redis.get(`${REDIS_PREFIX}msg:${chatId}`);
       const inlineKeyboard = createGameKeyboard({

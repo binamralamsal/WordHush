@@ -66,9 +66,9 @@ composer.command("score", async (ctx) => {
         const keyboard = generateUserSelectionKeyboard(users, username);
         return ctx.reply(
           `⚠️ <strong>Multiple Users Found</strong>\n\n` +
-            `There are ${users.length} users with username @${username}. ` +
-            `This can happen when a user deletes their account and someone else creates a new account with the same username.\n\n` +
-            `Please select the user you want to view:`,
+          `There are ${users.length} users with username @${username}. ` +
+          `This can happen when a user deletes their account and someone else creates a new account with the same username.\n\n` +
+          `Please select the user you want to view:`,
           {
             parse_mode: "HTML",
             reply_markup: keyboard,
@@ -132,7 +132,7 @@ composer.command("score", async (ctx) => {
     });
 
     return ctx.reply(message, {
-      reply_markup: hasAnyScores ? keyboard : undefined,
+      reply_markup: keyboard,
       reply_parameters: {
         message_id: ctx.msgId,
       },
