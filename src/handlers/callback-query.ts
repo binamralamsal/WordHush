@@ -1,3 +1,4 @@
+import { sql } from 'kysely';
 import { Composer, InlineKeyboard } from "grammy";
 
 import { sql } from "kysely";
@@ -90,7 +91,7 @@ composer.on("callback_query:data", async (ctx) => {
     const users = await db
       .selectFrom("users")
       .select(["id", "name", "username"])
-      .where("username", "=", username)
+      .where(sql`lower(username)`, "=", username)
       .execute();
 
     if (users.length === 0) {

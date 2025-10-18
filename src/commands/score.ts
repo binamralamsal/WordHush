@@ -1,3 +1,4 @@
+import { sql } from 'kysely';
 import { Composer } from "grammy";
 
 import { db } from "../config/db";
@@ -54,7 +55,7 @@ composer.command("score", async (ctx) => {
       const users = await db
         .selectFrom("users")
         .select(["id", "name", "username"])
-        .where("username", "=", username)
+        .where(sql`lower(username)`, "=", username)
         .execute();
 
       if (users.length === 0) {
