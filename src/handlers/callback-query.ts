@@ -1,4 +1,4 @@
-import { Composer } from "grammy";
+import { Composer, InlineKeyboard } from "grammy";
 
 import { sql } from "kysely";
 import z from "zod";
@@ -21,8 +21,11 @@ import { getUserScores } from "../services/get-user-scores";
 import type { AllowedChatSearchKey, AllowedChatTimeKey } from "../types";
 import { createLetterHint } from "../util/create-letter-hint";
 import { formatLeaderboardMessage } from "../util/format-leaderboard-message";
+import { formatNoScoresMessage } from "../util/format-no-scores-message";
 import { formatUserScoreMessage } from "../util/format-user-score-message";
 import { generateLeaderboardKeyboard } from "../util/generate-leaderboard-keyboard";
+import { generateUserSelectionKeyboard } from "../util/generate-user-selection-keyboard";
+import { getSmartDefaults } from "../util/get-smart-defaults";
 import { resolveDifficulty } from "../util/resolve-difficulty";
 
 const composer = new Composer();
@@ -78,46 +81,236 @@ composer.on("callback_query:data", async (ctx) => {
         },
       )
       .catch(() => {});
-  } else if (callbackData.startsWith("myscore")) {
-    const [, userId, searchKey, timeKey] = ctx.callbackQuery.data.split(" ");
-    if (!allowedChatSearchKeys.includes(searchKey as AllowedChatSearchKey))
-      break condition;
-    if (!allowedChatTimeKeys.includes(timeKey as AllowedChatTimeKey))
-      break condition;
-    if (!ctx.chat) break condition;
-    if (!userId) break condition;
+  } else if (callbackData.startsWith("score_list")) {
+    const parts = ctx.callbackQuery.data.split(" ");
 
-    const userScore = await getUserScores({
-      chatId: chatId.toString(),
-      userId,
-      searchKey: searchKey as AllowedChatSearchKey,
-      timeKey: timeKey as AllowedChatTimeKey,
-    });
+    const [, username] = parts;
+    if (!username) break condition;
 
-    if (!userScore)
+    const users = await db
+      .selectFrom("users")
+      .select(["id", "name", "username"])
+      .where("username", "=", username)
+      .execute();
+
+    if (users.length === 0) {
       return ctx.answerCallbackQuery({
-        text: "You have no scores recorded yet for this query.",
+        text: "No users found with this username.",
         show_alert: true,
       });
+    }
 
-    const keyboard = generateLeaderboardKeyboard(
-      searchKey as AllowedChatSearchKey,
-      timeKey as AllowedChatTimeKey,
-      `myscore ${Number(userId)}`,
-    );
+    const keyboard = generateUserSelectionKeyboard(users, username);
 
     await ctx
       .editMessageText(
-        formatUserScoreMessage(userScore, searchKey as AllowedChatSearchKey),
+        `⚠️ <strong>Multiple Users Found</strong>\n\n` +
+          `There are ${users.length} users with username @${username}. ` +
+          `This can happen when a user deletes their account and someone else creates a new account with the same username.\n\n` +
+          `Please select the user you want to view:`,
         {
-          reply_markup: keyboard,
           parse_mode: "HTML",
-          link_preview_options: { is_disabled: true },
+          reply_markup: keyboard,
         },
       )
       .catch(() => {});
 
     return await ctx.answerCallbackQuery();
+  } else if (callbackData.startsWith("score")) {
+    const parts = ctx.callbackQuery.data.split(" ");
+
+    if (callbackData.startsWith("score_select")) {
+      const [, userId, username] = parts;
+      if (!userId) break condition;
+      if (!ctx.chat) break condition;
+
+      const chatId = ctx.chat.id.toString();
+
+      const userInfo = await db
+        .selectFrom("users")
+        .select(["name"])
+        .where("id", "=", userId)
+        .executeTakeFirst();
+
+      if (!userInfo) {
+        return ctx.answerCallbackQuery({
+          text: "User not found.",
+          show_alert: true,
+        });
+      }
+
+      const { searchKey, timeKey, hasAnyScores } = await getSmartDefaults({
+        userId,
+        chatId,
+        requestedSearchKey: undefined,
+        requestedTimeKey: undefined,
+        chatType: ctx.chat.type,
+      });
+
+      const userScore = await getUserScores({
+        chatId,
+        userId,
+        searchKey,
+        timeKey,
+      });
+
+      if (!userScore) {
+        const message = formatNoScoresMessage({
+          isOwnScore: false,
+          userName: userInfo.name,
+          searchKey,
+          timeKey,
+          wasTimeKeyExplicit: false,
+          hasAnyScores,
+        });
+
+        const backButtonDetails = {
+          text: "⬅️ Back to user list",
+          callback: `score_list ${username}`,
+        };
+
+        const keyboard = hasAnyScores
+          ? generateLeaderboardKeyboard(
+              searchKey,
+              timeKey,
+              `score ${userId}`,
+              username ? backButtonDetails : undefined,
+            )
+          : new InlineKeyboard().text(
+              backButtonDetails.text,
+              backButtonDetails.callback,
+            );
+
+        await ctx
+          .editMessageText(message, {
+            reply_markup: keyboard,
+          })
+          .catch(() => {});
+
+        return ctx.answerCallbackQuery({
+          text: "No scores found for the current filter.",
+        });
+      }
+
+      const keyboard = generateLeaderboardKeyboard(
+        searchKey,
+        timeKey,
+        `score ${userId}`,
+        username
+          ? {
+              text: "⬅️ Back to user list",
+              callback: `score_list ${username}`,
+            }
+          : undefined,
+      );
+
+      await ctx
+        .editMessageText(formatUserScoreMessage(userScore, searchKey), {
+          reply_markup: keyboard,
+          parse_mode: "HTML",
+          link_preview_options: { is_disabled: true },
+        })
+        .catch(() => {});
+
+      return await ctx.answerCallbackQuery();
+    }
+
+    if (
+      callbackData.startsWith("score ") &&
+      !callbackData.startsWith("score_select") &&
+      !callbackData.startsWith("score_list")
+    ) {
+      const [, userId, searchKey, timeKey] = parts;
+      if (!allowedChatSearchKeys.includes(searchKey as AllowedChatSearchKey))
+        break condition;
+      if (!allowedChatTimeKeys.includes(timeKey as AllowedChatTimeKey))
+        break condition;
+      if (!ctx.chat) break condition;
+      if (!userId) break condition;
+
+      const chatId = ctx.chat.id.toString();
+
+      const userInfo = await db
+        .selectFrom("users")
+        .select(["name"])
+        .where("id", "=", userId)
+        .executeTakeFirst();
+
+      if (!userInfo) {
+        return ctx.answerCallbackQuery({
+          text: "User not found.",
+          show_alert: true,
+        });
+      }
+
+      let hasAnyScoresQuery = db
+        .selectFrom("leaderboard")
+        .select("userId")
+        .where("userId", "=", userId)
+        .limit(1);
+
+      if (searchKey === "group") {
+        hasAnyScoresQuery = hasAnyScoresQuery.where("chatId", "=", chatId);
+      }
+
+      const hasAnyScores = !!(await hasAnyScoresQuery.executeTakeFirst());
+
+      const userScore = await getUserScores({
+        chatId,
+        userId,
+        searchKey: searchKey as AllowedChatSearchKey,
+        timeKey: timeKey as AllowedChatTimeKey,
+      });
+
+      if (!userScore) {
+        const message = formatNoScoresMessage({
+          isOwnScore: userId === ctx.from?.id.toString(),
+          userName: userInfo.name,
+          searchKey: searchKey as AllowedChatSearchKey,
+          timeKey: timeKey as AllowedChatTimeKey,
+          wasTimeKeyExplicit: true,
+          hasAnyScores,
+        });
+
+        const keyboard = hasAnyScores
+          ? generateLeaderboardKeyboard(
+              searchKey as AllowedChatSearchKey,
+              timeKey as AllowedChatTimeKey,
+              `score ${userId}`,
+            )
+          : undefined;
+
+        await ctx
+          .editMessageText(message, {
+            reply_markup: keyboard,
+          })
+          .catch(() => {});
+
+        return ctx.answerCallbackQuery({
+          text: "No scores found for this period.",
+          show_alert: false,
+        });
+      }
+
+      const keyboard = generateLeaderboardKeyboard(
+        searchKey as AllowedChatSearchKey,
+        timeKey as AllowedChatTimeKey,
+        `score ${userId}`,
+      );
+
+      await ctx
+        .editMessageText(
+          formatUserScoreMessage(userScore, searchKey as AllowedChatSearchKey),
+          {
+            reply_markup: keyboard,
+            parse_mode: "HTML",
+            link_preview_options: { is_disabled: true },
+          },
+        )
+        .catch(() => {});
+
+      return await ctx.answerCallbackQuery();
+    }
   }
 
   condition: if (
