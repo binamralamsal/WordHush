@@ -10,6 +10,8 @@ const { DatabaseError } = pg;
 const composer = new Composer();
 
 composer.command("setgametopic", async (ctx) => {
+  if (!ctx.message) return;
+
   if (!ctx.chat.is_forum) {
     await ctx.reply("This command can only be used in forum groups.");
     return;
@@ -30,11 +32,10 @@ composer.command("setgametopic", async (ctx) => {
     if (!allowedStatus.includes(chatMember.status)) {
       return ctx.reply("Only admins can use this command.");
     }
-  }
-  catch (err) {
+  } catch {
     return ctx.reply(
       "⚠️ I couldn't verify admin rights.\n" +
-      "👉 Please make sure I’m an admin in this group."
+        "👉 Please make sure I’m an admin in this group.",
     );
   }
 

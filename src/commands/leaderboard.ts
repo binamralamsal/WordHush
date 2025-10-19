@@ -55,3 +55,5 @@ composer.command("leaderboard", async (ctx) => {
 CommandsHelper.addNewCommand("leaderboard", "View the leaderboard.");
 
 export const leaderboardCommand = composer;
+
+

@@ -5,11 +5,17 @@ import { commands } from "./commands";
 import { bot } from "./config/bot";
 import { callbackQueryHandler } from "./handlers/callback-query";
 import { onMessageHander } from "./handlers/on-message";
+import { userSyncHandler } from "./handlers/user-sync-handler";
 import { CommandsHelper } from "./util/commands-helper";
 
 bot.api.config.use(autoRetry());
+
+bot.use(userSyncHandler);
+
 bot.use(
   sequentialize((ctx) => {
+    if (ctx.callbackQuery) return undefined;
+
     return ctx.chatId?.toString() || ctx.from?.id.toString();
   }),
 );

@@ -2,6 +2,7 @@ import { Composer } from "grammy";
 
 import { endhushCommand } from "./endhush";
 import { helpCommand } from "./help";
+import { hushAuthCommand } from "./hushauth";
 import { leaderboardCommand } from "./leaderboard";
 import { myscoreCommand } from "./myscore";
 import { newhushCommand } from "./newhush";
@@ -24,6 +25,7 @@ composer.use(
   statsCommand,
   suggestWordCommand,
   scoreCommand,
+  hushAuthCommand,
 );
 
 export const commands = composer;

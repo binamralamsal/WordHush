@@ -66,7 +66,10 @@ export const redisGameSchema = z.object({
   sentence: z.string(),
   currentHintIndex: z.number().default(0),
   revealedPositions: z.array(z.number()).default([]),
+  startedBy: z.string().optional(),
 });
+
+export type GameSchema = z.infer<typeof redisGameSchema>;
 
 export async function startGame(
   ctx: Context,
@@ -74,6 +77,8 @@ export async function startGame(
   level: DifficultyLevels,
   isCallback = false,
 ) {
+  if (!ctx.from) return;
+
   const data = await redis.get(`${REDIS_PREFIX}game:${chatId}`);
   if (data) {
     const existingGame = redisGameSchema.safeParse(JSON.parse(data));
@@ -142,6 +147,7 @@ export async function startGame(
           hints: data.hints,
           sentence: data.sentence,
           currentHintIndex: 1,
+          startedBy: ctx.from.id.toString(),
           level,
         }),
       ),

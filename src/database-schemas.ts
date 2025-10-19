@@ -13,6 +13,14 @@ export type Generated<T> = T extends ColumnType<infer S, infer I, infer U>
 
 export type Timestamp = ColumnType<Date, Date | string, Date | string>;
 
+export interface AuthorizedUser {
+  authorizedBy: string;
+  chatId: string;
+  createdAt: Generated<Timestamp>;
+  id: Generated<number>;
+  userId: string;
+}
+
 export interface ChatGameTopic {
   chatId: string;
   createdAt: Generated<Timestamp>;
@@ -51,6 +59,7 @@ export interface WordHint {
 }
 
 export interface DB {
+  authorizedUsers: AuthorizedUser;
   chatGameTopics: ChatGameTopic;
   leaderboard: Leaderboard;
   users: User;

@@ -1,8 +1,9 @@
-import { sql } from 'kysely';
 import { Composer, InlineKeyboard } from "grammy";
 
+import { sql } from "kysely";
 import z from "zod";
 
+import { endGame, isUserAuthorized } from "../commands/endhush";
 import {
   allowedChatSearchKeys,
   allowedChatTimeKeys,
@@ -80,7 +81,7 @@ composer.on("callback_query:data", async (ctx) => {
           parse_mode: "HTML",
         },
       )
-      .catch(() => { });
+      .catch(() => {});
   } else if (callbackData.startsWith("score_list")) {
     const parts = ctx.callbackQuery.data.split(" ");
 
@@ -105,15 +106,15 @@ composer.on("callback_query:data", async (ctx) => {
     await ctx
       .editMessageText(
         `⚠️ <strong>Multiple Users Found</strong>\n\n` +
-        `There are ${users.length} users with username @${username}. ` +
-        `This can happen when a user deletes their account and someone else creates a new account with the same username.\n\n` +
-        `Please select the user you want to view:`,
+          `There are ${users.length} users with username @${username}. ` +
+          `This can happen when a user deletes their account and someone else creates a new account with the same username.\n\n` +
+          `Please select the user you want to view:`,
         {
           parse_mode: "HTML",
           reply_markup: keyboard,
         },
       )
-      .catch(() => { });
+      .catch(() => {});
 
     return await ctx.answerCallbackQuery();
   } else if (callbackData.startsWith("score")) {
@@ -171,21 +172,21 @@ composer.on("callback_query:data", async (ctx) => {
 
         const keyboard = hasAnyScores
           ? generateLeaderboardKeyboard(
-            searchKey,
-            timeKey,
-            `score ${userId}`,
-            username ? backButtonDetails : undefined,
-          )
+              searchKey,
+              timeKey,
+              `score ${userId}`,
+              username ? backButtonDetails : undefined,
+            )
           : new InlineKeyboard().text(
-            backButtonDetails.text,
-            backButtonDetails.callback,
-          );
+              backButtonDetails.text,
+              backButtonDetails.callback,
+            );
 
         await ctx
           .editMessageText(message, {
             reply_markup: keyboard,
           })
-          .catch(() => { });
+          .catch(() => {});
 
         return ctx.answerCallbackQuery({
           text: "No scores found for the current filter.",
@@ -198,9 +199,9 @@ composer.on("callback_query:data", async (ctx) => {
         `score ${userId}`,
         username
           ? {
-            text: "⬅️ Back to user list",
-            callback: `score_list ${username}`,
-          }
+              text: "⬅️ Back to user list",
+              callback: `score_list ${username}`,
+            }
           : undefined,
       );
 
@@ -210,7 +211,7 @@ composer.on("callback_query:data", async (ctx) => {
           parse_mode: "HTML",
           link_preview_options: { is_disabled: true },
         })
-        .catch(() => { });
+        .catch(() => {});
 
       return await ctx.answerCallbackQuery();
     }
@@ -282,7 +283,7 @@ composer.on("callback_query:data", async (ctx) => {
           .editMessageText(message, {
             reply_markup: keyboard,
           })
-          .catch(() => { });
+          .catch(() => {});
 
         return ctx.answerCallbackQuery({
           text: "No scores found for this period.",
@@ -305,10 +306,126 @@ composer.on("callback_query:data", async (ctx) => {
             link_preview_options: { is_disabled: true },
           },
         )
-        .catch(() => { });
+        .catch(() => {});
 
       return await ctx.answerCallbackQuery();
     }
+  } else if (callbackData.startsWith("vote_end")) {
+    const [, chatIdStr] = callbackData.split(" ");
+    if (!chatIdStr) return;
+
+    const chatId = parseInt(chatIdStr);
+
+    if (!ctx.chat || ctx.chat.id !== chatId) {
+      return await ctx.answerCallbackQuery({
+        text: "This vote is not for this chat.",
+        show_alert: true,
+      });
+    }
+
+    const data = await redis.get(`${REDIS_PREFIX}game:${chatId}`);
+    const existingGame = data && redisGameSchema.safeParse(JSON.parse(data));
+
+    if (!existingGame || !existingGame.success) {
+      return await ctx.answerCallbackQuery({
+        text: "No active game found.",
+        show_alert: true,
+      });
+    }
+
+    const userId = ctx.from.id.toString();
+    const voteKey = `${REDIS_PREFIX}vote:${chatId}`;
+    const voteDataStr = await redis.get(voteKey);
+
+    if (!voteDataStr) {
+      return await ctx.answerCallbackQuery({
+        text: "The voting session has expired.",
+        show_alert: true,
+      });
+    }
+
+    const voteData = JSON.parse(voteDataStr);
+
+    if (voteData.voters.includes(userId)) {
+      return await ctx.answerCallbackQuery({
+        text: "You have already voted.",
+      });
+    }
+
+    const chatMember = await ctx.getChatMember(parseInt(userId));
+    const isAdmin =
+      chatMember.status === "administrator" || chatMember.status === "creator";
+    const isSystemAdmin = env.ADMIN_USERS.includes(ctx.from.id);
+    const isAuthorized = await isUserAuthorized(userId, chatId.toString());
+    const isGameStarter = existingGame.data.startedBy === userId;
+
+    if (isAdmin || isSystemAdmin || isGameStarter || isAuthorized) {
+      const userName =
+        ctx.from.first_name +
+        (ctx.from.last_name ? " " + ctx.from.last_name : "");
+      const userLink = `<a href="tg://user?id=${ctx.from.id}">${userName}</a>`;
+
+      let reason = "";
+      if ((isAdmin || isSystemAdmin) && !isGameStarter && !isAuthorized) {
+        reason = `<b>Ended by group administrator: </b>${userLink}`;
+      } else if (isGameStarter && !isAdmin && !isSystemAdmin && !isAuthorized) {
+        reason = `<b>Ended by game starter: </b>${userLink}`;
+      } else if (isAuthorized && !isAdmin && !isSystemAdmin && !isGameStarter) {
+        reason = `<b>Ended by authorized user: </b>${userLink}`;
+      } else {
+        reason = `<b>Ended by group administrator or game starter: </b>${userLink}`;
+      }
+
+      await ctx.deleteMessage();
+      await endGame(ctx, chatId, existingGame.data, reason);
+
+      return await ctx.answerCallbackQuery({
+        text: "Game ended by admin/game starter! 🎯",
+      });
+    }
+
+    voteData.voters.push(userId);
+
+    if (voteData.voters.length >= 3) {
+      await redis.del(voteKey);
+
+      const reason = "<b>Game ended - 3 players voted to end the game</b>";
+      await ctx.deleteMessage();
+      await endGame(ctx, chatId, existingGame.data, reason);
+
+      return await ctx.answerCallbackQuery({
+        text: "Game ended! Voting threshold reached. 🎯",
+      });
+    }
+
+    await redis.setex(voteKey, 300, JSON.stringify(voteData));
+
+    const votesNeeded = 3 - voteData.voters.length;
+
+    await ctx.editMessageText(
+      `<b>🗳️ Vote to End Game</b>\n\n` +
+        `Players are voting to end the game.\n\n` +
+        `<b>Votes needed: 3 total</b>\n` +
+        `<b>Current votes: ${voteData.voters.length}/3</b>\n\n` +
+        `React with the button below to vote for ending the game.`,
+      {
+        reply_markup: {
+          inline_keyboard: [
+            [
+              {
+                text: `✅ Vote to End (${voteData.voters.length}/3)`,
+                callback_data: `vote_end ${chatId}`,
+              },
+            ],
+          ],
+        },
+        parse_mode: "HTML",
+      },
+    );
+
+    await ctx.answerCallbackQuery({
+      text: `Vote recorded! ${votesNeeded} more votes needed.`,
+    });
   }
 
   condition: if (
@@ -413,10 +530,11 @@ composer.on("callback_query:data", async (ctx) => {
 
       const level = existingGame.data.level;
 
-      const message = `<blockquote>All Hints for ${level.charAt(0).toUpperCase() + level.slice(1)
-        } level:</blockquote>\n${hint ? `\n<b>Hint: </b><code>${hint}</code>\n\n` : ""}${revealedHints
-          .map((hint, index) => `${index + 1}: ${hint}`)
-          .join("\n")}`;
+      const message = `<blockquote>All Hints for ${
+        level.charAt(0).toUpperCase() + level.slice(1)
+      } level:</blockquote>\n${hint ? `\n<b>Hint: </b><code>${hint}</code>\n\n` : ""}${revealedHints
+        .map((hint, index) => `${index + 1}: ${hint}`)
+        .join("\n")}`;
 
       const latestMsgId = await redis.get(`${REDIS_PREFIX}msg:${chatId}`);
       const inlineKeyboard = createGameKeyboard({
