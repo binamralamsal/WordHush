@@ -50,6 +50,13 @@
   - **Time**: `today`, `week`, `month`, `year`, or `all` ```
 - **/stats** - View bot usage statistics (admin users only).
 - **/suggestword** - Suggest a word for the game which doesn't exist in our database.
+- **/hushauth** - Manage authorized users for ending games. Example:
+  ```
+  /hushauth @username
+  /hushauth 123456789
+  /hushauth list
+  /hushauth remove @username
+  ```
 
 ## Installation & Setup
 

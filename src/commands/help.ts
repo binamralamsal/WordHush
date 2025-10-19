@@ -34,6 +34,12 @@ Welcome to WordHush - the ultimate word guessing game where our AI gives you cle
 <code>/setgametopic</code> - Set a topic for group games
 <code>/unsetgametopic</code> - Remove topic filter
 
+🛂 <b>Authorization for ending game</b>
+<code>/hushauth @username</code> - Mention a user
+<code>/hushauth 123456789</code> - Use user ID
+<code>/hushauth list</code> - Show authorized users
+<code>/hushauth remove @username</code> - Remove authorization
+
 📊 <b>Your Progress:</b>
 <code>/score</code> - View your score or check another player's stats
   • <code>/score</code> - View your own score
