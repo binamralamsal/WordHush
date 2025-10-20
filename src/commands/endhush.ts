@@ -96,7 +96,7 @@ composer.command("endhush", async (ctx) => {
       reason = `<b>Ended by: </b>${userLink}`;
     }
   
-    await endGame(ctx, chatId, existingGame.data, reason);
+    return await endGame(ctx, chatId, existingGame.data, reason);
   }
 
   const voteKey = `${REDIS_PREFIX}vote:${chatId}`;
