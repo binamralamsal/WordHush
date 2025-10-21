@@ -60,7 +60,7 @@ export async function up(db: Kysely<any>): Promise<void> {
 
   await sql`
     CREATE TRIGGER update_leaderboard_updated_at
-    BEFORE UPDATE ON users
+    BEFORE UPDATE ON leaderboard
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
   `.execute(db);

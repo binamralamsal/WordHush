@@ -145,17 +145,6 @@ composer.command("hushauth", async (ctx) => {
 
   const args = ctx.match?.trim();
 
-  if (!args) {
-    return await ctx.reply(
-      "Usage:\n" +
-        "/hushauth @username - Mention a user\n" +
-        "/hushauth 123456789 - Use user ID\n" +
-        "/hushauth list - Show authorized users\n" +
-        "/hushauth remove @username - Remove authorization",
-      replyConfig,
-    );
-  }
-
   const parts = args.split(" ");
   const action = parts[0]!.toLowerCase();
 

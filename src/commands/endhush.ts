@@ -67,31 +67,36 @@ composer.command("endhush", async (ctx) => {
 
   const userId = ctx.from.id.toString();
   const chatMember = await ctx.getChatMember(parseInt(userId));
-  const isAdmin =
-    chatMember.status === "administrator" || chatMember.status === "creator";
+  
+  const isAdmin = chatMember.status === "administrator" || chatMember.status === "creator";
   const isSystemAdmin = env.ADMIN_USERS.includes(ctx.from.id);
   const isGameStarter = existingGame.data.startedBy === userId;
   const isAuthorized = await isUserAuthorized(userId, chatId.toString());
-
-  if (isAdmin || isSystemAdmin || isGameStarter || isAuthorized) {
-    const userName =
-      ctx.from.first_name +
-      (ctx.from.last_name ? " " + ctx.from.last_name : "");
+  const isPrivate = ctx.chat.type === "private";
+  
+  const isPermitted = isAdmin || isSystemAdmin || isGameStarter || isAuthorized || isPrivate;
+  
+  if (isPermitted) {
+    const userName = ctx.from.first_name + (ctx.from.last_name ? " " + ctx.from.last_name : "");
     const userLink = `<a href="tg://user?id=${ctx.from.id}">${userName}</a>`;
-
+  
     let reason = "";
-    if ((isAdmin || isSystemAdmin) && !isGameStarter && !isAuthorized) {
+  
+    if (isPrivate) {
+      reason = "";
+    } else if (isSystemAdmin && !isAdmin && !isGameStarter && !isAuthorized) {
+      reason = `<b>Ended by system administrator: </b>${userLink}`;
+    } else if (isAdmin && !isGameStarter && !isAuthorized) {
       reason = `<b>Ended by group administrator: </b>${userLink}`;
     } else if (isGameStarter && !isAdmin && !isSystemAdmin && !isAuthorized) {
       reason = `<b>Ended by game starter: </b>${userLink}`;
     } else if (isAuthorized && !isAdmin && !isSystemAdmin && !isGameStarter) {
       reason = `<b>Ended by authorized user: </b>${userLink}`;
     } else {
-      reason = `<b>Ended by group administrator or game starter: </b>${userLink}`;
+      reason = `<b>Ended by: </b>${userLink}`;
     }
-
-    await endGame(ctx, chatId, existingGame.data, reason);
-    return;
+  
+    return await endGame(ctx, chatId, existingGame.data, reason);
   }
 
   const voteKey = `${REDIS_PREFIX}vote:${chatId}`;
