@@ -1,4 +1,3 @@
-import { sql } from 'kysely';
 import { Composer } from "grammy";
 
 import { db } from "../config/db";
@@ -7,9 +6,9 @@ import { CommandsHelper } from "../util/commands-helper";
 import { formatNoScoresMessage } from "../util/format-no-scores-message";
 import { formatUserScoreMessage } from "../util/format-user-score-message";
 import { generateLeaderboardKeyboard } from "../util/generate-leaderboard-keyboard";
-import { generateUserSelectionKeyboard } from "../util/generate-user-selection-keyboard";
 import { getSmartDefaults } from "../util/get-smart-defaults";
 import { parseLeaderboardInput } from "../util/parse-leaderboard-input";
+import { getTargetUser } from "./hushauth";
 
 const composer = new Composer();
 
@@ -41,69 +40,18 @@ composer.command("score", async (ctx) => {
     timeKey: requestedTimeKey,
   } = parseLeaderboardInput(input, undefined, null);
 
-  let targetUserId: string | null = null;
-  let targetUserName: string | undefined;
   const isOwnScore = !target;
 
-  if (target) {
-    // Check if it's a numeric user ID
-    if (/^\d+$/.test(target)) {
-      targetUserId = target;
-    } else {
-      const username = target.replace(/^@/, "");
+  const targetUser = await getTargetUser(ctx, target, true);
 
-      const users = await db
-        .selectFrom("users")
-        .select(["id", "name", "username"])
-        .where(sql`lower(username)`, "=", username)
-        .execute();
-
-      if (users.length === 0) {
-        return ctx.reply(`No user found with username @${username}.`);
-      }
-
-      if (users.length > 1) {
-        const keyboard = generateUserSelectionKeyboard(users, username);
-        return ctx.reply(
-          `⚠️ <strong>Multiple Users Found</strong>\n\n` +
-          `There are ${users.length} users with username @${username}. ` +
-          `This can happen when a user deletes their account and someone else creates a new account with the same username.\n\n` +
-          `Please select the user you want to view:`,
-          {
-            parse_mode: "HTML",
-            reply_markup: keyboard,
-            reply_parameters: {
-              message_id: ctx.msgId,
-            },
-          },
-        );
-      }
-
-      targetUserId = users[0]!.id;
-      targetUserName = users[0]!.name;
-    }
-  } else {
-    targetUserId =
-      ctx.message?.reply_to_message?.from?.id.toString() ||
-      ctx.from.id.toString();
-  }
-
-  const userExists = await db
-    .selectFrom("users")
-    .select(["id", "name"])
-    .where("id", "=", targetUserId)
-    .executeTakeFirst();
-
-  if (!userExists) {
+  if (!targetUser) {
     return ctx.reply("User not found.");
   }
 
-  if (!targetUserName) {
-    targetUserName = userExists.name;
-  }
+  const targetUsername = targetUser.username || targetUser.name;
 
   const { searchKey, timeKey, hasAnyScores } = await getSmartDefaults({
-    userId: targetUserId,
+    userId: targetUser.id,
     chatId,
     requestedSearchKey,
     requestedTimeKey,
@@ -113,11 +61,11 @@ composer.command("score", async (ctx) => {
   const keyboard = generateLeaderboardKeyboard(
     searchKey,
     timeKey,
-    `score ${targetUserId}`,
+    `score ${targetUser.id}`,
   );
 
   const userScores = await getUserScores({
-    userId: targetUserId,
+    userId: targetUser.id,
     chatId,
     searchKey,
     timeKey,
@@ -126,7 +74,7 @@ composer.command("score", async (ctx) => {
   if (!userScores) {
     const message = formatNoScoresMessage({
       isOwnScore,
-      userName: targetUserName,
+      userName: targetUsername,
       searchKey,
       timeKey,
       wasTimeKeyExplicit: !!requestedTimeKey,

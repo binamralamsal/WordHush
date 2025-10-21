@@ -8,9 +8,43 @@ import { CommandsHelper } from "../util/commands-helper";
 
 const composer = new Composer();
 
-async function getTargetUser(ctx: Context, identifier: string) {
-  if (ctx.message?.reply_to_message?.from) {
-    const user = ctx.message.reply_to_message.from;
+export async function getTargetUser(
+  ctx: Context,
+  identifier: string | undefined,
+  fallback = false,
+) {
+  if (
+    fallback &&
+    !identifier &&
+    ctx.from &&
+    ctx.chatId?.toString() === ctx.from.id.toString()
+  ) {
+    const user = ctx.from;
+
+    return {
+      id: user.id.toString(),
+      name: user.first_name + (user.last_name ? " " + user.last_name : ""),
+      username: user.username,
+    };
+  }
+
+  const replyToMessageFrom = ctx.message?.reply_to_message?.from;
+
+  if (replyToMessageFrom && !replyToMessageFrom.is_bot) {
+    const user = replyToMessageFrom;
+
+    return {
+      id: user.id.toString(),
+      name: user.first_name + (user.last_name ? " " + user.last_name : ""),
+      username: user.username,
+    };
+  }
+
+  if (fallback && !identifier) {
+    const user = ctx.from;
+
+    if (!user) return null;
+
     return {
       id: user.id.toString(),
       name: user.first_name + (user.last_name ? " " + user.last_name : ""),
@@ -46,7 +80,7 @@ async function getTargetUser(ctx: Context, identifier: string) {
       return userData;
     }
 
-    if (entity.type === "mention") {
+    if (identifier && entity.type === "mention") {
       const username = identifier.slice(1);
 
       const user = await db
@@ -59,7 +93,7 @@ async function getTargetUser(ctx: Context, identifier: string) {
     }
   }
 
-  if (/^\d+$/.test(identifier)) {
+  if (identifier && /^\d+$/.test(identifier)) {
     try {
       const member = await ctx.getChatMember(parseInt(identifier));
       if (member.user) {
