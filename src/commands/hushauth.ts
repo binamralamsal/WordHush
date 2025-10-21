@@ -9,6 +9,16 @@ import { CommandsHelper } from "../util/commands-helper";
 const composer = new Composer();
 
 async function getTargetUser(ctx: Context, identifier: string) {
+  if (ctx.from && ctx.chatId?.toString() === ctx.from?.id.toString()) {
+    const user = ctx.from;
+
+    return {
+      id: user.id.toString(),
+      name: user.first_name + (user.last_name ? " " + user.last_name : ""),
+      username: user.username,
+    };
+  }
+
   if (ctx.message?.reply_to_message?.from) {
     const user = ctx.message.reply_to_message.from;
     return {
