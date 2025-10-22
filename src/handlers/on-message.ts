@@ -29,12 +29,9 @@ composer.on("message:text", async (ctx) => {
       .selectAll()
       .execute();
     const topicIds = topicData.map((t) => t.topicId);
+    const currentTopicId = ctx.msg.message_thread_id?.toString() || "general";
 
-    if (
-      topicData.length > 0 &&
-      !topicIds.includes(ctx.msg.message_thread_id?.toString() || "")
-    )
-      return;
+    if (topicData.length > 0 && !topicIds.includes(currentTopicId)) return;
   }
 
   if (!gameState || !gameState.success) return;

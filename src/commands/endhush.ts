@@ -49,10 +49,9 @@ composer.command("endhush", async (ctx) => {
       .selectAll()
       .execute();
     const topicIds = topicData.map((t) => t.topicId);
-    if (
-      topicData.length > 0 &&
-      !topicIds.includes(ctx.msg.message_thread_id?.toString() || "")
-    )
+    const currentTopicId = ctx.msg.message_thread_id?.toString() || "general";
+
+    if (topicData.length > 0 && !topicIds.includes(currentTopicId))
       return await ctx.reply(
         "This topic is not set for the game. Please play the game in the designated topic.",
       );
@@ -67,21 +66,25 @@ composer.command("endhush", async (ctx) => {
 
   const userId = ctx.from.id.toString();
   const chatMember = await ctx.getChatMember(parseInt(userId));
-  
-  const isAdmin = chatMember.status === "administrator" || chatMember.status === "creator";
+
+  const isAdmin =
+    chatMember.status === "administrator" || chatMember.status === "creator";
   const isSystemAdmin = env.ADMIN_USERS.includes(ctx.from.id);
   const isGameStarter = existingGame.data.startedBy === userId;
   const isAuthorized = await isUserAuthorized(userId, chatId.toString());
   const isPrivate = ctx.chat.type === "private";
-  
-  const isPermitted = isAdmin || isSystemAdmin || isGameStarter || isAuthorized || isPrivate;
-  
+
+  const isPermitted =
+    isAdmin || isSystemAdmin || isGameStarter || isAuthorized || isPrivate;
+
   if (isPermitted) {
-    const userName = ctx.from.first_name + (ctx.from.last_name ? " " + ctx.from.last_name : "");
+    const userName =
+      ctx.from.first_name +
+      (ctx.from.last_name ? " " + ctx.from.last_name : "");
     const userLink = `<a href="tg://user?id=${ctx.from.id}">${userName}</a>`;
-  
+
     let reason = "";
-  
+
     if (isPrivate) {
       reason = "";
     } else if (isSystemAdmin && !isAdmin && !isGameStarter && !isAuthorized) {
@@ -95,7 +98,7 @@ composer.command("endhush", async (ctx) => {
     } else {
       reason = `<b>Ended by: </b>${userLink}`;
     }
-  
+
     return await endGame(ctx, chatId, existingGame.data, reason);
   }
 

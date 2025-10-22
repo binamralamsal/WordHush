@@ -6,13 +6,10 @@ import { CommandsHelper } from "../util/commands-helper";
 const composer = new Composer();
 
 composer.command("unsetgametopic", async (ctx) => {
+  if (!ctx.message) return;
+
   if (!ctx.chat.is_forum) {
     await ctx.reply("This command can only be used in forum groups.");
-    return;
-  }
-
-  if (!ctx.msg.is_topic_message) {
-    await ctx.reply("Please use this command within a topic.");
     return;
   }
 
@@ -26,25 +23,23 @@ composer.command("unsetgametopic", async (ctx) => {
     if (!allowedStatus.includes(chatMember.status)) {
       return ctx.reply("Only admins can use this command.");
     }
-  }
-  catch (err) {
+  } catch  {
     return ctx.reply(
       "⚠️ I couldn't verify admin rights.\n" +
-      "👉 Please make sure I’m an admin in this group."
+        "👉 Please make sure I’m an admin in this group.",
     );
   }
 
-  const topicId = ctx.msg.message_thread_id;
+  let topicId = ctx.msg.message_thread_id?.toString();
 
   if (!topicId) {
-    await ctx.reply("Could not retrieve the topic ID.");
-    return;
+    topicId = "general";
   }
 
   await db
     .deleteFrom("chatGameTopics")
     .where("chatId", "=", ctx.chat.id.toString())
-    .where("topicId", "=", topicId.toString())
+    .where("topicId", "=", topicId)
     .execute();
 
   await ctx.reply(`@${ctx.me.username} won't use this topic for the game.`);
