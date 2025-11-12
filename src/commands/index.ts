@@ -10,6 +10,7 @@ import { scoreCommand } from "./score";
 import { setGameTopicCommand } from "./setgametopic";
 import { statsCommand } from "./stats";
 import { suggestWordCommand } from "./suggestword";
+import { transferCommand } from "./transfer";
 import { unsetGameTopicCommand } from "./unsetgametopic";
 
 const composer = new Composer();
@@ -26,6 +27,7 @@ composer.use(
   suggestWordCommand,
   scoreCommand,
   hushAuthCommand,
+  transferCommand,
 );
 
 export const commands = composer;
