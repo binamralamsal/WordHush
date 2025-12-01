@@ -4,6 +4,7 @@ import { run, sequentialize } from "@grammyjs/runner";
 import { commands } from "./commands";
 import { bot } from "./config/bot";
 import { callbackQueryHandler } from "./handlers/callback-query";
+import { errorHandler } from "./handlers/error-handler";
 import { onMessageHander } from "./handlers/on-message";
 import { userSyncHandler } from "./handlers/user-sync-handler";
 import { CommandsHelper } from "./util/commands-helper";
@@ -23,6 +24,8 @@ bot.use(
 bot.use(commands);
 bot.use(callbackQueryHandler);
 bot.use(onMessageHander);
+
+bot.catch(errorHandler);
 
 await bot.api.deleteWebhook({ drop_pending_updates: true });
 run(bot);

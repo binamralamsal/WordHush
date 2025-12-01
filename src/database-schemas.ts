@@ -24,6 +24,7 @@ export interface AuthorizedUser {
 export interface ChatGameTopic {
   chatId: string;
   createdAt: Generated<Timestamp>;
+  shouldRecreateOnExpire: Generated<boolean>;
   topicId: string;
   updatedAt: Generated<Timestamp>;
 }

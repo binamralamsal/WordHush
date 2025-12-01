@@ -6,6 +6,7 @@ import { hushAuthCommand } from "./hushauth";
 import { leaderboardCommand } from "./leaderboard";
 import { myscoreCommand } from "./myscore";
 import { newhushCommand } from "./newhush";
+import { recreateTopicCommand } from "./recreatetopic";
 import { scoreCommand } from "./score";
 import { setGameTopicCommand } from "./setgametopic";
 import { statsCommand } from "./stats";
@@ -28,6 +29,7 @@ composer.use(
   scoreCommand,
   hushAuthCommand,
   transferCommand,
+  recreateTopicCommand,
 );
 
 export const commands = composer;
