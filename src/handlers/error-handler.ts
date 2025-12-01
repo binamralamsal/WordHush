@@ -47,7 +47,12 @@ export async function errorHandler(error: BotError<Context>) {
         "Recreating topic...",
       );
       try {
-        const createdTopic = await ctx.createForumTopic("WordHush Test");
+        const createdTopic = await ctx.createForumTopic(
+          topic.name || "WordHush",
+          {
+            icon_custom_emoji_id: topic.iconCustomEmojiId ?? undefined,
+          },
+        );
         await ctx.deleteForumTopic();
         await ctx.api.deleteMessage(ctx.chatId, message.message_id);
         await db
@@ -55,6 +60,9 @@ export async function errorHandler(error: BotError<Context>) {
           .values({
             chatId: ctx.chatId.toString(),
             topicId: createdTopic.message_thread_id.toString(),
+            iconCustomEmojiId: createdTopic.icon_custom_emoji_id,
+            shouldRecreateOnExpire: true,
+            name: topic.name,
           })
           .execute();
         await db

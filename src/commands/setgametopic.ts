@@ -34,7 +34,10 @@ composer.command("setgametopic", async (ctx) => {
     );
   }
 
+  const replyToMessage = ctx.msg.reply_to_message;
   let topicId = ctx.msg.message_thread_id?.toString();
+  const forumDetails =
+    replyToMessage?.forum_topic_created || replyToMessage?.forum_topic_edited;
 
   if (!topicId) {
     topicId = "general";
@@ -43,7 +46,12 @@ composer.command("setgametopic", async (ctx) => {
   try {
     await db
       .insertInto("chatGameTopics")
-      .values({ chatId: ctx.chat.id.toString(), topicId })
+      .values({
+        chatId: ctx.chat.id.toString(),
+        topicId,
+        name: forumDetails?.name,
+        iconCustomEmojiId: forumDetails?.icon_custom_emoji_id,
+      })
       .execute();
 
     await ctx.reply(
